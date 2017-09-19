@@ -1,5 +1,8 @@
 
 
+class ExitException(Exception):
+    pass
+
 
 def count_leading_spaces(s):
     n=0
