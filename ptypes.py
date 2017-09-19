@@ -65,6 +65,12 @@ class Rect(object):
         else:
             raise TypeError()
             
+    def width(self):
+        return self.br.x-self.tl.x
+            
+    def height(self):
+        return self.br.y-self.tl.y
+            
     def is_point_inside(self,p):
         if not isinstance(p,Point):
             p=Point(p)

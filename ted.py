@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 import curses
 import sys
+#import os
 from ptypes import Point, Rect
+
+class ExitException(Exception):
+    pass
 
 class Application:
     def __init__(self):
+        #os.system('kbd_mode -s')
         self.scr=curses.initscr()
+        self.keylog=open('key.log','w')
         curses.noecho()
-        curses.cbreak()
+        curses.raw()
         self.scr.keypad(1)
         mx=self.scr.getmaxyx()
         self.width=mx[1]
@@ -16,6 +22,7 @@ class Application:
         curses.start_color()
         curses.use_default_colors()
         curses.init_pair(1,curses.COLOR_YELLOW,curses.COLOR_BLUE)
+        curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_GREEN)
         sys.stdout.write('\033]12;yellow\007')
         #for i in range(0, curses.COLORS):
         #    curses.init_pair(i + 1, i, -1)
@@ -25,6 +32,8 @@ class Application:
             pos=Point(pos)
         if self.rect.is_point_inside(pos):
             self.scr.move(pos.y,pos.x)
+            return True
+        return False
         
     def fill(self,x0,y0,w,h,c,clr):
         for y in xrange(y0,y0+h):
@@ -41,15 +50,14 @@ class Application:
     def refresh(self):
         self.scr.refresh()
         
-    def getch(self):
-        return self.scr.getch()
+    def getkey(self):
+        ch=self.scr.getch()
+        curses.ungetch(ch)
+        key=self.scr.getkey()
+        self.keylog.write('{} {}\n'.format(key,ch))
+        self.keylog.flush()
+        return key
         
-    def stub(self):
-        #self.fill(0,0,self.width,1,curses.ACS_BOARD)
-        self.fill(0,1,self.width,self.height-2,' ',1) #curses.ACS_CKBOARD)
-        self.scr.refresh()
-        self.scr.getch()
-
     def close(self):
         curses.nocbreak()
         self.scr.keypad(0)
@@ -59,26 +67,95 @@ class Application:
 
 def message_box(text):
     pass
-        
+
 class View:
     def __init__(self,scr,doc):
         self.scr=scr
+        self.rect=Rect(self.scr.rect.tl+Point(0,1),self.scr.rect.br-Point(0,2))
         self.doc=doc
         self.offset=Point(0,0)
         self.cursor=Point(0,0)
+        self.selection=None
+        self.lastx=0
+        self.insert=True
+        self.movement_keys={'KEY_LEFT':(-1,0),
+                            'KEY_RIGHT':(1,0),
+                            'KEY_DOWN':(0,1),
+                            'KEY_UP':(0,-1),
+                            'KEY_PPAGE':(0,-self.rect.height()),
+                            'KEY_NPAGE':(0,self.rect.height()),
+                            'KEY_HOME':lambda v:(-v.cursor.x,0),
+                            'KEY_END':(99999,0),
+                            'kEND5':lambda v:(0,v.doc.rows_count()),
+                            'kHOM5':lambda v:(-v.cursor.x,-v.cursor.y)
+                            }
+
+    def process_text_input(self,c):
+        movement=None
+        if c==27:
+            raise ExitException()
+        if c>=32 and c<127:
+            if self.doc.add_char(chr(c),self.cursor,self.insert):
+                movement=(1,0)
+        if c==9:
+            movement=Point(0,0)
+            for i in xrange(0,4):
+                if self.doc.add_char(' ',self.cursor,self.insert):
+                    movement+=(1,0)
+        if c==10:
+            if self.doc.new_line(self.cursor,self.insert):
+                movement=(-self.cursor.x,1)
+        return movement
+
+    def process_movement(self,movement):
+        movement=Point(movement)
+        new_cursor=self.doc.set_cursor(self.cursor+movement)
+        if movement.x!=0:
+            self.lastx=new_cursor.x
+        else:
+            new_cursor=self.doc.set_cursor(Point(self.lastx,new_cursor.y))
+        self.cursor=new_cursor
+        scr_pos=self.cursor-self.offset
+        if not self.rect.is_point_inside(scr_pos):
+            if scr_pos.x>=self.rect.br.x:
+                self.offset.x=self.cursor.x-self.rect.width()
+            if scr_pos.x<self.rect.tl.x:
+                self.offset.x=self.cursor.x
+            if scr_pos.y>=self.rect.br.y or scr_pos.y<self.rect.tl.y:
+                self.offset.y=self.cursor.y-self.rect.height()/2
+                if self.offset.y<0:
+                    self.offset.y=0
+            self.doc.invalidate()
+        
+        
+    def process_movement_key(self,key):
+        movement=None
+        if key in self.movement_keys:
+            m=self.movement_keys.get(key)
+            if callable(m):
+                movement=m(self)
+            else:
+                movement=m
+        return movement
+        
+    def process_special_keys(self,key):
+        movement=None
+        if key=='KEY_DC':
+            self.doc.delete_char(self.cursor)
+        if key=='KEY_BACKSPACE' and self.cursor.x>0:
+            self.doc.delete_char(self.cursor-Point(1,0))
+            movement=(-1,0)
+        return movement
         
     def process_input(self):
-        c=self.scr.getch()
-        if c==ord('q'):
-            return False
-        if c==curses.KEY_RIGHT:
-            self.cursor+=(1,0)
-        if c==curses.KEY_LEFT and self.cursor.x>0:
-            self.cursor-=(1,0)
-        if c==curses.KEY_UP and self.cursor.y>0:
-            self.cursor-=(0,1)
-        if c==curses.KEY_DOWN:
-            self.cursor+=(0,1)
+        key=self.scr.getkey()
+        movement=self.process_movement_key(key)
+        if not movement:
+            movement=self.process_special_keys(key)
+        if not movement and len(key)==1:
+            movement=self.process_text_input(ord(key[0]))
+        if movement:
+            self.process_movement(movement)
         return True
         
     def render(self):
@@ -98,7 +175,7 @@ class View:
                         row=row+' '*(self.scr.width-len(row))
                     self.scr.write(row,1)
                 else:
-                    self.scr.write(row,1)
+                    self.scr.write(row,2)
         self.draw_cursor()
         self.scr.refresh()
         
@@ -110,7 +187,7 @@ class View:
     
 class Document:
     def __init__(self):
-        self.text=[]
+        self.text=['']
         self.valid=False
         
     def load(self,filename):
@@ -120,7 +197,7 @@ class Document:
             self.invalidate()
         except IOError:
             message_box('Failed to open {}'.format(filename))
-            
+
     def rows_count(self):
         return len(self.text)
         
@@ -128,7 +205,56 @@ class Document:
         if index<0 or index>=self.rows_count():
             return ''
         return self.text[index]
+        
+    def set_cursor(self,cursor):
+        if cursor.y<0:
+            return Point(0,0)
+        if cursor.y>=self.rows_count():
+            return Point(0,self.rows_count()-1)
+        row=self.get_row(cursor.y)
+        x=cursor.x
+        if x<0:
+            x=0
+        if x>len(row):
+            x=len(row)
+        return Point(x,cursor.y)
+        
+    def delete_char(self,cursor):
+        if cursor.x<0 or cursor.y<0 or cursor.y>=self.rows_count():
+            return False
+        row=self.text[cursor.y]
+        if cursor.x<len(row):
+            row=row[0:cursor.x]+row[cursor.x+1:]
+            self.text[cursor.y]=row
+            self.invalidate()
+        return True
             
+    def add_char(self,c,cursor,insert):
+        if cursor.x<0 or cursor.y<0 or cursor.y>=self.rows_count():
+            return False
+        row=self.text[cursor.y]
+        if cursor.x>len(row):
+            row=row+' '*(cursor.x-len(row))
+        rest=cursor.x
+        if not insert:
+            rest+=1
+        row=row[0:cursor.x]+c+row[rest:]
+        self.text[cursor.y]=row
+        self.invalidate()
+        return True
+    
+    def new_line(self, cursor, insert):
+        if cursor.x<0 or cursor.y<0:
+            return False
+        if cursor.y>=self.rows_count():
+            while cursor.y>=self.rows_count():
+                self.text.append('')
+        else:
+            row=self.get_row(cursor.y)
+            cur=[row[0:cursor.x],row[cursor.x:]]
+            self.text=self.text[0:cursor.y]+cur+self.text[cursor.y+1:]
+        return True
+
     def invalidate(self):
         self.valid=False
         
@@ -142,8 +268,11 @@ def main():
     doc.load('fff')
     view=View(app,doc)
     view.render()
-    while view.process_input():
-        view.render()
+    try:
+        while view.process_input():
+            view.render()
+    except ExitException:
+        pass
     
     app.close()
 
