@@ -4,14 +4,14 @@ import sys
 #import os
 from ptypes import Point, Rect
 import collections
-import pyperclip
+from clip import copy, paste
+import utils
 
 class ExitException(Exception):
     pass
 
 class Application:
     def __init__(self):
-        #os.system('kbd_mode -s')
         self.scr=curses.initscr()
         self.keylog=open('key.log','w')
         curses.noecho()
@@ -27,8 +27,6 @@ class Application:
         curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_GREEN)
         curses.init_pair(3,curses.COLOR_BLACK,curses.COLOR_WHITE)
         sys.stdout.write('\033]12;yellow\007')
-        #for i in range(0, curses.COLORS):
-        #    curses.init_pair(i + 1, i, -1)
 
     def move(self,pos):
         if not isinstance(pos,Point):
@@ -80,6 +78,7 @@ class View:
         self.cursor=Point(0,0)
         self.selection=None
         self.lastx=0
+        self.tabsize=4
         self.insert=True
         self.shifted_moves={'KEY_SLEFT':'KEY_LEFT',
                             'KEY_SRIGHT':'KEY_RIGHT',
@@ -88,7 +87,9 @@ class View:
                             'KEY_SPREVIOUS':'KEY_PPAGE',
                             'KEY_SNEXT':'KEY_NPAGE',
                             'KEY_SHOME':'KEY_HOME',
-                            'KEY_SEND':'KEY_END'
+                            'KEY_SEND':'KEY_END',
+                            'kRIT6':'kRIT5',
+                            'kLFT6':'kLFT5'
                             }
         self.movement_keys={'KEY_LEFT':(-1,0),
                             'KEY_RIGHT':(1,0),
@@ -98,6 +99,8 @@ class View:
                             'KEY_NPAGE':(0,self.rect.height()),
                             'KEY_HOME':lambda v:(-v.cursor.x,0),
                             'KEY_END':(99999,0),
+                            'kRIT5':lambda v:v.doc.word_right(v.cursor)-v.cursor,
+                            'kLFT5':lambda v:v.doc.word_left(v.cursor)-v.cursor,
                             'kEND5':lambda v:(0,v.doc.rows_count()),
                             'kHOM5':lambda v:(-v.cursor.x,-v.cursor.y)
                             }
@@ -107,19 +110,39 @@ class View:
         if c==27:
             raise ExitException()
         if c==3 and not self.selection is None:
-            pyperclip.copy(self.get_selected_text())
+            copy(self.get_selected_text())
         if c==22:
-            pyperclip.paste()
-        if c>=32 and c<127:
+            text=paste()
+            if len(text)>0:
+                if not self.selection is None:
+                    self.delete_selection()
+                movement=self.doc.add_text(text,self.cursor,self.insert)
+        if c==ord('/') and not self.selection is None:
+            sel=self.normalized_selection()
+            inc=0
+            if sel.br.x>0:
+                inc=1
+            for y in range(sel.tl.y,sel.br.y+inc):
+                row=self.doc.get_row(y)
+                if row.startswith('//'):
+                    self.doc.delete_block(y,0,2)
+                else:
+                    self.doc.add_text('//',Point(0,y),True)
+        elif c>=32 and c<127:
             if not self.selection is None:
                 self.delete_selection()
             if self.doc.add_char(chr(c),self.cursor,self.insert):
                 movement=(1,0)
         if c==9:
-            movement=Point(0,0)
-            for i in range(0,4):
-                if self.doc.add_char(' ',self.cursor,self.insert):
-                    movement+=(1,0)
+            if not self.selection is None:
+                sel=self.normalized_selection()
+                inc=0
+                if sel.br.x>0:
+                    inc=1
+                for y in range(sel.tl.y,sel.br.y+inc):
+                    self.doc.add_text(' '*self.tabsize,Point(0,y),self.insert)
+            else:
+                movement=self.doc.add_text(' '*self.tabsize,self.cursor,self.insert)
         if c==10:
             if not self.selection is None:
                 self.delete_selection()
@@ -184,9 +207,32 @@ class View:
             else:
                 self.doc.delete_char(self.cursor-Point(1,0))
                 movement=(-1,0)
+        if key=='KEY_BTAB' and not self.selection is None:
+            sel=self.normalized_selection()
+            inc=0
+            if sel.br.x>0:
+                inc=1
+            for y in range(sel.tl.y,sel.br.y+inc):
+                row=self.doc.get_row(y)
+                n=utils.count_leading_spaces(row)
+                if n>self.tabsize:
+                    n=self.tabsize
+                if n>0:
+                    self.doc.delete_block(y,0,n)
         return movement
 
     def delete_selection(self):
+        if not self.selection is None:
+            sel=self.normalized_selection()
+            if sel.tl.y==sel.br.y:
+                self.doc.delete_block(sel.tl.y,sel.tl.x,sel.br.x)
+            else:
+                self.doc.delete_block(sel.tl.y,sel.tl.x,-1)
+                self.doc.delete_block(sel.br.y,0,sel.br.x)
+                for y in range(sel.tl.y+1,sel.br.y):
+                    self.doc.delete_row(sel.tl.y+1)
+                self.doc.join_next_row(sel.tl.y)
+            self.cursor=sel.tl
         self.selection=None
         
     def process_input(self):
@@ -289,6 +335,49 @@ class Document:
             return ''
         return self.text[index]
         
+    def join_next_row(self,row_index):
+        if row_index>=0 and row_index<(self.rows_count()-1):
+            row=self.get_row(row_index)
+            next=self.get_row(row_index+1)
+            del self.text[row_index+1]
+            self.text[row_index]=row+next
+
+    def delete_block(self,row_index,x0,x1):
+        if row_index>=0 and row_index<self.rows_count():
+            row=self.get_row(row_index)
+            if x1<0:
+                x1=len(row)
+            self.text[row_index]=row[0:x0]+row[x1:]
+            
+    def delete_row(self,row_index):
+        if row_index>=0 and row_index<self.rows_count():
+            del self.text[row_index]
+
+    def word_right(self,cursor):
+        if cursor.y<0 or cursor.y>=self.rows_count():
+            return cursor
+        row=self.get_row(cursor.y)
+        x=cursor.x
+        space_found=False
+        while x<len(row):
+            if not row[x].isalnum():
+                space_found=True
+            if row[x].isalnum() and space_found:
+                break
+            x=x+1
+        return Point(x,cursor.y)
+
+    def word_left(self,cursor):
+        if cursor.y<0 or cursor.y>=self.rows_count():
+            return cursor
+        row=self.get_row(cursor.y)
+        x=cursor.x
+        while x>0:
+            x-=1
+            if x>0 and row[x].isalnum() and not row[x-1].isalnum():
+                break
+        return Point(x,cursor.y)
+        
     def set_cursor(self,cursor):
         if cursor.y<0:
             return Point(0,0)
@@ -325,6 +414,22 @@ class Document:
         self.text[cursor.y]=row
         self.invalidate()
         return True
+        
+    def add_text(self, text, cursor, insert):
+        cx=cursor.x
+        res=Point(0,0)
+        if cursor.x<0 or cursor.y<0 or cursor.y>=self.rows_count():
+            return res
+        for c in text:
+            if ord(c)==10:
+                self.new_line(cursor,insert)
+                cursor=Point(0,cursor.y+1)
+                res=Point(-cx,res.y+1)
+            else:
+                self.add_char(c,cursor,insert)
+                cursor=cursor+Point(1,0)
+                res+=(1,0)
+        return res
     
     def new_line(self, cursor, insert):
         if cursor.x<0 or cursor.y<0:
@@ -346,7 +451,6 @@ class Document:
 
 def main():
     app=Application()
-    #app.stub()
     doc=Document()
     doc.load('fff')
     view=View(app,doc)
