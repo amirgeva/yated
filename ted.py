@@ -197,7 +197,9 @@ class View:
                         row=row+' '*(self.scr.width-len(row))
                     color=1
                     if not self.selection is None:
-                        sel=self.selection.normalized()
+                        sel=self.selection
+                        if sel.tl.y>sel.br.y:
+                            sel=Rect(sel.br,sel.tl)
                         if row_index>=sel.tl.y and row_index<=sel.br.y:
                             x=0
                             if row_index==sel.tl.y:
