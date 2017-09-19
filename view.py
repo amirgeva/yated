@@ -42,8 +42,8 @@ class View:
 
     def process_text_input(self,c):
         movement=None
-        if c==27:
-            raise utils.ExitException()
+        #if c==27:
+        #    raise utils.ExitException()
         if c==3 and not self.selection is None:
             copy(self.get_selected_text())
         if c==22:
@@ -131,6 +131,8 @@ class View:
         
     def process_special_keys(self,key):
         movement=None
+        if key=='KEY_F(12)':
+            raise utils.ExitException()
         if key=='KEY_DC':
             if not self.selection is None:
                 self.delete_selection()
@@ -245,4 +247,17 @@ class View:
     def draw_cursor(self):
         p=self.cursor-self.offset+Point(0,1)
         self.scr.move(p)
+
+    def on_copy(self):
+        pass
+
+    def on_cut(self):
+        pass
+
+    def on_paste(self):
+        pass
+
+    def on_file_open(self):
+        pass
+
 
