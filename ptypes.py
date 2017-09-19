@@ -65,6 +65,10 @@ class Rect(object):
         else:
             raise TypeError()
             
+    def normalized(self):
+        return Rect(min(self.tl.x,self.br.x),min(self.tl.y,self.br.y),
+                    max(self.tl.x,self.br.x),max(self.tl.y,self.br.y))
+            
     def width(self):
         return self.br.x-self.tl.x
             

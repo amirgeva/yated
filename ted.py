@@ -23,6 +23,7 @@ class Application:
         curses.use_default_colors()
         curses.init_pair(1,curses.COLOR_YELLOW,curses.COLOR_BLUE)
         curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_GREEN)
+        curses.init_pair(3,curses.COLOR_BLACK,curses.COLOR_WHITE)
         sys.stdout.write('\033]12;yellow\007')
         #for i in range(0, curses.COLORS):
         #    curses.init_pair(i + 1, i, -1)
@@ -78,6 +79,15 @@ class View:
         self.selection=None
         self.lastx=0
         self.insert=True
+        self.shifted_moves={'KEY_SLEFT':'KEY_LEFT',
+                            'KEY_SRIGHT':'KEY_RIGHT',
+                            'KEY_SF':'KEY_DOWN',
+                            'KEY_SR':'KEY_UP',
+                            'KEY_SPREVIOUS':'KEY_PPAGE',
+                            'KEY_SNEXT':'KEY_NPAGE',
+                            'KEY_SHOME':'KEY_HOME',
+                            'KEY_SEND':'KEY_END'
+                            }
         self.movement_keys={'KEY_LEFT':(-1,0),
                             'KEY_RIGHT':(1,0),
                             'KEY_DOWN':(0,1),
@@ -114,7 +124,12 @@ class View:
             self.lastx=new_cursor.x
         else:
             new_cursor=self.doc.set_cursor(Point(self.lastx,new_cursor.y))
+        if not self.selection is None:
+            self.selection.br = new_cursor
         self.cursor=new_cursor
+        self.scroll_display()
+        
+    def scroll_display(self):
         scr_pos=self.cursor-self.offset
         if not self.rect.is_point_inside(scr_pos):
             if scr_pos.x>=self.rect.br.x:
@@ -130,6 +145,13 @@ class View:
         
     def process_movement_key(self,key):
         movement=None
+        if key in self.shifted_moves:
+            if self.selection is None:
+                self.selection=Rect(self.cursor,self.cursor)
+            key=self.shifted_moves.get(key)
+        else:
+            if not self.selection is None:
+                self.selection=None
         if key in self.movement_keys:
             m=self.movement_keys.get(key)
             if callable(m):
@@ -173,7 +195,22 @@ class View:
                         row=row[0:self.scr.width]
                     if len(row)<self.scr.width:
                         row=row+' '*(self.scr.width-len(row))
-                    self.scr.write(row,1)
+                    color=1
+                    if not self.selection is None:
+                        sel=self.selection.normalized()
+                        if row_index>=sel.tl.y and row_index<=sel.br.y:
+                            x=0
+                            if row_index==sel.tl.y:
+                                x=sel.tl.x
+                                self.scr.write(row[0:x],1)
+                            limit=len(row)
+                            if row_index==sel.br.y:
+                                limit=sel.br.x
+                            self.scr.write(row[x:limit],3)
+                            if limit<len(row):
+                                self.scr.write(row[limit:],1)
+                    else:
+                        self.scr.write(row,1)
                 else:
                     self.scr.write(row,2)
         self.draw_cursor()
