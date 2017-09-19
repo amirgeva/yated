@@ -1,8 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import curses
 import sys
 #import os
 from ptypes import Point, Rect
+import collections
+import pyperclip
 
 class ExitException(Exception):
     pass
@@ -37,14 +39,14 @@ class Application:
         return False
         
     def fill(self,x0,y0,w,h,c,clr):
-        for y in xrange(y0,y0+h):
+        for y in range(y0,y0+h):
             self.move((x0,y))
-            for x in xrange(x0,x0+w):
+            for x in range(x0,x0+w):
                 self.scr.addch(c,curses.color_pair(clr))
         
     def write(self,text,clr):
         clr=curses.color_pair(clr)|curses.A_BOLD
-        for i in xrange(0,len(text)):
+        for i in range(0,len(text)):
             c=text[i]
             self.scr.addch(c,clr)
         
@@ -104,15 +106,23 @@ class View:
         movement=None
         if c==27:
             raise ExitException()
+        if c==3 and not self.selection is None:
+            pyperclip.copy(self.get_selected_text())
+        if c==22:
+            pyperclip.paste()
         if c>=32 and c<127:
+            if not self.selection is None:
+                self.delete_selection()
             if self.doc.add_char(chr(c),self.cursor,self.insert):
                 movement=(1,0)
         if c==9:
             movement=Point(0,0)
-            for i in xrange(0,4):
+            for i in range(0,4):
                 if self.doc.add_char(' ',self.cursor,self.insert):
                     movement+=(1,0)
         if c==10:
+            if not self.selection is None:
+                self.delete_selection()
             if self.doc.new_line(self.cursor,self.insert):
                 movement=(-self.cursor.x,1)
         return movement
@@ -137,7 +147,7 @@ class View:
             if scr_pos.x<self.rect.tl.x:
                 self.offset.x=self.cursor.x
             if scr_pos.y>=self.rect.br.y or scr_pos.y<self.rect.tl.y:
-                self.offset.y=self.cursor.y-self.rect.height()/2
+                self.offset.y=self.cursor.y-int(self.rect.height()/2)
                 if self.offset.y<0:
                     self.offset.y=0
             self.doc.invalidate()
@@ -145,29 +155,39 @@ class View:
         
     def process_movement_key(self,key):
         movement=None
+        shift=False
         if key in self.shifted_moves:
             if self.selection is None:
                 self.selection=Rect(self.cursor,self.cursor)
             key=self.shifted_moves.get(key)
-        else:
-            if not self.selection is None:
-                self.selection=None
+            shift=True
         if key in self.movement_keys:
             m=self.movement_keys.get(key)
-            if callable(m):
+            if isinstance(m, collections.Callable):
                 movement=m(self)
             else:
                 movement=m
+            if not shift:
+                self.selection=None
         return movement
         
     def process_special_keys(self,key):
         movement=None
         if key=='KEY_DC':
-            self.doc.delete_char(self.cursor)
+            if not self.selection is None:
+                self.delete_selection()
+            else:
+                self.doc.delete_char(self.cursor)
         if key=='KEY_BACKSPACE' and self.cursor.x>0:
-            self.doc.delete_char(self.cursor-Point(1,0))
-            movement=(-1,0)
+            if not self.selection is None:
+                self.delete_selection()
+            else:
+                self.doc.delete_char(self.cursor-Point(1,0))
+                movement=(-1,0)
         return movement
+
+    def delete_selection(self):
+        self.selection=None
         
     def process_input(self):
         key=self.scr.getkey()
@@ -179,12 +199,23 @@ class View:
         if movement:
             self.process_movement(movement)
         return True
-        
+
+    def normalized_selection(self):
+        if self.selection is None:
+            return None
+        sel=self.selection
+        if sel.tl.y > sel.br.y:
+            sel = Rect(sel.br, sel.tl)
+        if sel.tl.y == sel.br.y and sel.tl.x > sel.br.x:
+            sel = Rect(sel.br, sel.tl)
+        return sel
+
     def render(self):
         if not self.doc.valid:
+            sel = self.normalized_selection()
             i0=self.offset.y-1
             j0=self.offset.x
-            for y in xrange(1,self.scr.height-1):
+            for y in range(1,self.scr.height-1):
                 row_index=i0+y
                 self.scr.move(Point(0,y))
                 row=' '*self.scr.width
@@ -196,10 +227,7 @@ class View:
                     if len(row)<self.scr.width:
                         row=row+' '*(self.scr.width-len(row))
                     color=1
-                    if not self.selection is None:
-                        sel=self.selection
-                        if sel.tl.y>sel.br.y:
-                            sel=Rect(sel.br,sel.tl)
+                    if not sel is None:
                         if row_index>=sel.tl.y and row_index<=sel.br.y:
                             x=0
                             if row_index==sel.tl.y:
@@ -211,13 +239,29 @@ class View:
                             self.scr.write(row[x:limit],3)
                             if limit<len(row):
                                 self.scr.write(row[limit:],1)
+                        else:
+                            self.scr.write(row, 1)
                     else:
                         self.scr.write(row,1)
                 else:
                     self.scr.write(row,2)
         self.draw_cursor()
         self.scr.refresh()
-        
+
+    def get_selected_text(self):
+        sel = self.normalized_selection()
+        res=[]
+        for row_index in range(sel.tl.y,sel.br.y+1):
+            row=self.doc.get_row(row_index)
+            x=0
+            limit=len(row)
+            if row_index==sel.tl.y:
+                x=sel.tl.x
+            if row_index==sel.br.y:
+                limit=sel.br.x
+            res.append(row[x:limit])
+        return '\n'.join(res)
+
     def draw_cursor(self):
         p=self.cursor-self.offset+Point(0,1)
         self.scr.move(p)

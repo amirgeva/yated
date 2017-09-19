@@ -87,9 +87,6 @@ def unit_test():
     s1=str(p1)
     s2=str(p2)
     s3=str(p3)
-    if s1!=s2 or s1!=s3:
-        print "Mismatch"
-    print p1+p2
                 
 if __name__=='__main__':
     unit_test()
