@@ -19,11 +19,13 @@ class Application:
         self.height=mx[0]
         self.rect=Rect(0,0,self.width,self.height)
         self.menu_bar=Menu('')
+        self.shortcuts={}
         curses.start_color()
         curses.use_default_colors()
         curses.init_pair(1,curses.COLOR_YELLOW,curses.COLOR_BLUE)
         curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_GREEN)
         curses.init_pair(3,curses.COLOR_BLACK,curses.COLOR_WHITE)
+        curses.init_pair(4,curses.COLOR_BLACK,curses.COLOR_CYAN)
         sys.stdout.write('\033]12;yellow\007')
         
     def set_menu(self,bar):
@@ -45,21 +47,26 @@ class Application:
         
     def write(self,text,clr,attr=curses.A_BOLD):
         clr=curses.color_pair(clr)|attr
-        for i in range(0,len(text)):
-            c=text[i]
-            self.scr.addch(c,clr)
+        if isinstance(text,str):
+            for i in range(0,len(text)):
+                c=text[i]
+                self.scr.addch(c,clr)
+        else:
+            self.scr.addch(text,clr)
         
     def refresh(self):
         self.scr.refresh()
         
     def getkey(self):
-        #ch=self.scr.getch()
-        #curses.ungetch(ch)
-        key=self.scr.getkey()
-        if len(key)==1 and ord(key[0])==27:
-            self.scr.nodelay(True)
-            key="Alt+"+self.scr.getkey()
+        try:
             self.scr.nodelay(False)
+            key=self.scr.getkey()
+            if len(key)==1 and ord(key[0])==27:
+                self.scr.nodelay(True)
+                key="Alt+"+self.scr.getkey()
+                self.scr.nodelay(False)
+        except curses.error:
+            key='ESC'
         self.keylog.write('{}\n'.format(key))
         self.keylog.flush()
         return key
@@ -72,11 +79,15 @@ class Application:
         self.scr=None
         
     def draw_menu(self):
+        color=4
         self.move((0,0))
-        self.write(' ',2)
+        self.write(' ',color)
+        pos=Point(2,1)
         for item in self.menu_bar.items:
-            title=item[0].title
-            self.write('[',2)
+            title=item.title
+            item.pos=Point(pos)
+            pos+=Point(len(title)-title.count('&')+3,0)
+            self.write('[',color)
             rev=False
             for c in title:
                 if c=='&':
@@ -86,8 +97,10 @@ class Application:
                     if rev:
                         attr=curses.A_REVERSE
                         rev=False
-                    self.write(c,2,attr)
-            self.write('] ',2)
+                        self.shortcuts['Alt+'+c.upper()]=item
+                        self.shortcuts['Alt+'+c.lower()]=item
+                    self.write(c,color,attr)
+            self.write('] ',color)
 
 def message_box(text):
     pass
@@ -105,12 +118,17 @@ def fill_menu(menu,desc):
             
 
 def create_menu(view):
-    desc=[ ('&File',[ ('&Open',view.on_file_open)
+    desc=[ ('&File',[ ('&Open',view.on_file_open),
+                      ('&Save',view.on_file_save),
+                      ('Save &As',view.on_file_save_as),
+                      ('&Exit',view.on_file_exit),
                     ]),
            ('&Edit',[ ('&Copy',view.on_copy),
                       ('C&ut',view.on_cut),
                       ('&Paste',view.on_paste)
-                    ]) 
+                    ]),
+           ('&Help',[ ('&About',view.on_help_about)
+                    ])
          ]
     bar=Menu('')
     fill_menu(bar,desc)

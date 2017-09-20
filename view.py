@@ -1,14 +1,16 @@
 import collections
+import curses
 from ptypes import Point, Rect
 from clip import copy,paste
 import utils
 
 
 class View:
-    def __init__(self,scr,doc):
-        self.scr=scr
-        self.rect=Rect(self.scr.rect.tl+Point(0,1),self.scr.rect.br-Point(0,2))
+    def __init__(self,app,doc):
+        self.app=app
+        self.rect=Rect(self.app.rect.tl+Point(0,1),self.app.rect.br-Point(0,2))
         self.doc=doc
+        self.active_menu=None
         self.offset=Point(0,0)
         self.cursor=Point(0,0)
         self.selection=None
@@ -44,8 +46,8 @@ class View:
         movement=None
         #if c==27:
         #    raise utils.ExitException()
-        if c==3 and not self.selection is None:
-            copy(self.get_selected_text())
+        if c==3:
+            self.on_copy()
         if c==22:
             text=paste()
             if len(text)>0:
@@ -131,8 +133,6 @@ class View:
         
     def process_special_keys(self,key):
         movement=None
-        if key=='KEY_F(12)':
-            raise utils.ExitException()
         if key=='KEY_DC':
             if not self.selection is None:
                 self.delete_selection()
@@ -172,15 +172,41 @@ class View:
             self.cursor=sel.tl
         self.selection=None
         
+    def process_app_shortcuts(self,key):
+        if key in self.app.shortcuts:
+            self.active_menu=self.app.shortcuts.get(key)
+            
+    def process_menu_keys(self,key):
+        menu_index=self.app.menu_bar.items.index(self.active_menu)
+        n=len(self.app.menu_bar.items)
+        if key=='KEY_LEFT':
+            self.active_menu=self.app.menu_bar.items[(menu_index-1)%n]
+        if key=='KEY_RIGHT':
+            self.active_menu=self.app.menu_bar.items[(menu_index+1)%n]
+        if key=='ESC':
+            self.active_menu=None
+            return
+        for item in self.active_menu.items:
+            if key.lower()==item.key.lower():
+                item.activate()
+                self.active_menu=None
+                return
+        
     def process_input(self):
-        key=self.scr.getkey()
-        movement=self.process_movement_key(key)
-        if not movement:
-            movement=self.process_special_keys(key)
-        if not movement and len(key)==1:
-            movement=self.process_text_input(ord(key[0]))
-        if movement:
-            self.process_movement(movement)
+        key=self.app.getkey()
+        if key=='KEY_F(12)':
+            raise utils.ExitException()
+        self.process_app_shortcuts(key)
+        if not self.active_menu is None:
+            self.process_menu_keys(key)
+        else:
+            movement=self.process_movement_key(key)
+            if not movement:
+                movement=self.process_special_keys(key)
+            if not movement and len(key)==1:
+                movement=self.process_text_input(ord(key[0]))
+            if movement:
+                self.process_movement(movement)
         return True
 
     def normalized_selection(self):
@@ -198,37 +224,39 @@ class View:
             sel = self.normalized_selection()
             i0=self.offset.y-1
             j0=self.offset.x
-            for y in range(1,self.scr.height-1):
+            for y in range(1,self.app.height-1):
                 row_index=i0+y
-                self.scr.move(Point(0,y))
-                row=' '*self.scr.width
+                self.app.move(Point(0,y))
+                row=' '*self.app.width
                 if row_index>=0 and row_index<self.doc.rows_count():
                     row=str(self.doc.get_row(row_index))
                     row=row[j0:]
-                    if len(row)>self.scr.width:
-                        row=row[0:self.scr.width]
-                    if len(row)<self.scr.width:
-                        row=row+' '*(self.scr.width-len(row))
+                    if len(row)>self.app.width:
+                        row=row[0:self.app.width]
+                    if len(row)<self.app.width:
+                        row=row+' '*(self.app.width-len(row))
                     if not sel is None:
                         if row_index>=sel.tl.y and row_index<=sel.br.y:
                             x=0
                             if row_index==sel.tl.y:
                                 x=sel.tl.x
-                                self.scr.write(row[0:x],1)
+                                self.app.write(row[0:x],1)
                             limit=len(row)
                             if row_index==sel.br.y:
                                 limit=sel.br.x
-                            self.scr.write(row[x:limit],3)
+                            self.app.write(row[x:limit],3)
                             if limit<len(row):
-                                self.scr.write(row[limit:],1)
+                                self.app.write(row[limit:],1)
                         else:
-                            self.scr.write(row, 1)
+                            self.app.write(row, 1)
                     else:
-                        self.scr.write(row,1)
+                        self.app.write(row,1)
                 else:
-                    self.scr.write(row,2)
+                    self.app.write(row,2)
         self.draw_cursor()
-        self.scr.refresh()
+        if not self.active_menu is None:
+            self.active_menu.draw(self.app)
+        self.app.refresh()
 
     def get_selected_text(self):
         sel = self.normalized_selection()
@@ -246,18 +274,32 @@ class View:
 
     def draw_cursor(self):
         p=self.cursor-self.offset+Point(0,1)
-        self.scr.move(p)
+        self.app.move(p)
 
     def on_copy(self):
-        pass
+        if not self.selection is None:
+            copy(self.get_selected_text())
+            return True
+        return False
 
     def on_cut(self):
-        pass
+        if self.on_copy():
+            self.delete_selection()
 
     def on_paste(self):
-        pass
+        curses.ungetch(22)
 
     def on_file_open(self):
         pass
 
+    def on_file_save(self):
+        pass
 
+    def on_file_save_as(self):
+        pass
+
+    def on_file_exit(self):
+        pass
+
+    def on_help_about(self):
+        pass
