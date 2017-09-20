@@ -157,7 +157,8 @@ def create_menu(view):
 def main():
     app=Application()
     doc=Document()
-    doc.load('fff')
+    if len(sys.argv)>1:
+        doc.load(sys.argv[1])
     view=View(app,doc)
     app.set_menu(create_menu(view))
     app.draw_menu()
