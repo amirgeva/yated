@@ -10,7 +10,7 @@ from menus import Menu
 class Application:
     def __init__(self):
         self.scr=curses.initscr()
-        self.keylog=open('key.log','w')
+        self.keylog=open('/tmp/key.log','w')
         curses.noecho()
         curses.raw()
         self.scr.keypad(1)
@@ -39,6 +39,9 @@ class Application:
             return True
         return False
         
+    def fill_rect(self,rect,c,clr):
+        self.fill(rect.tl.x,rect.tl.y,rect.width(),rect.height(),c,clr)
+        
     def fill(self,x0,y0,w,h,c,clr):
         for y in range(y0,y0+h):
             self.move((x0,y))
@@ -53,6 +56,23 @@ class Application:
                 self.scr.addch(c,clr)
         else:
             self.scr.addch(text,clr)
+            
+    def draw_frame(self,rect,color):
+        self.move(rect.tl)
+        self.write(curses.ACS_ULCORNER,color)
+        for i in range(0,rect.width()-2):
+            self.write(curses.ACS_HLINE,color)
+        self.write(curses.ACS_URCORNER,color)
+        for y in range(rect.tl.y+1,rect.br.y):
+            self.move(Point(rect.tl.x,y))
+            self.write(curses.ACS_VLINE,color)
+            self.move(Point(rect.br.x-1,y))
+            self.write(curses.ACS_VLINE,color)
+        self.move(Point(rect.tl.x,rect.br.y-1))
+        self.write(curses.ACS_LLCORNER,color)
+        for i in range(0,rect.width()-2):
+            self.write(curses.ACS_HLINE,color)
+        self.write(curses.ACS_LRCORNER,color)
         
     def refresh(self):
         self.scr.refresh()

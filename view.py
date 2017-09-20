@@ -1,6 +1,7 @@
 import collections
 import curses
 from ptypes import Point, Rect
+from dialogs import Dialog
 from clip import copy,paste
 import utils
 
@@ -11,6 +12,7 @@ class View:
         self.rect=Rect(self.app.rect.tl+Point(0,1),self.app.rect.br-Point(0,2))
         self.doc=doc
         self.active_menu=None
+        self.active_dialog=None
         self.offset=Point(0,0)
         self.cursor=Point(0,0)
         self.selection=None
@@ -191,6 +193,11 @@ class View:
                 item.activate()
                 self.active_menu=None
                 return
+                
+    def process_dialog_keys(self,key):
+        action=self.active_dialog.process_key(key)
+        if isinstance(action, collections.Callable):
+            action()
         
     def process_input(self):
         key=self.app.getkey()
@@ -199,6 +206,8 @@ class View:
         self.process_app_shortcuts(key)
         if not self.active_menu is None:
             self.process_menu_keys(key)
+        elif not self.active_dialog is None:
+            self.process_dialog_keys(key)
         else:
             movement=self.process_movement_key(key)
             if not movement:
@@ -256,6 +265,8 @@ class View:
         self.draw_cursor()
         if not self.active_menu is None:
             self.active_menu.draw(self.app)
+        if not self.active_dialog is None:
+            self.active_dialog.draw(self.app)
         self.app.refresh()
 
     def get_selected_text(self):
@@ -293,13 +304,26 @@ class View:
         pass
 
     def on_file_save(self):
-        pass
+        self.doc.save()
 
     def on_file_save_as(self):
         pass
 
     def on_file_exit(self):
-        pass
+        if self.doc.modified:
+            self.active_dialog=Dialog('Save File? Y/N')
+            self.active_dialog.add_key('Y',self.on_file_save_exit)
+            self.active_dialog.add_key('N',self.on_file_discard)
+        else:
+            raise utils.ExitException()
+            
+    def on_file_save_exit(self):
+        self.doc.save()
+        self.on_file_exit()
+            
+    def on_file_discard(self):
+        self.doc.modified=False
+        self.on_file_exit()
 
     def on_help_about(self):
         pass

@@ -4,15 +4,28 @@ class Document:
     def __init__(self):
         self.text=['']
         self.valid=False
+        self.filename=''
+        self.modified=False
         
     def load(self,filename):
         try:
-            self.text=open(filename,'r').readlines()
+            f=open(filename,'r')
+            self.text=f.readlines()
+            f.close()
             self.text=[row.replace('\n','') for row in self.text]
+            self.filename=filename
             self.invalidate()
         except IOError:
             pass
             #message_box('Failed to open {}'.format(filename))
+            
+    def save(self):
+        if len(self.filename)==0:
+            return False
+        f=open(self.filename,'w')
+        f.write('\n'.join(self.text))
+        f.close()
+        self.modified=False
 
     def rows_count(self):
         return len(self.text)
@@ -28,6 +41,7 @@ class Document:
             next=self.get_row(row_index+1)
             del self.text[row_index+1]
             self.text[row_index]=row+next
+            self.modified=True
 
     def delete_block(self,row_index,x0,x1):
         if row_index>=0 and row_index<self.rows_count():
@@ -35,10 +49,12 @@ class Document:
             if x1<0:
                 x1=len(row)
             self.text[row_index]=row[0:x0]+row[x1:]
+            self.modified=True
             
     def delete_row(self,row_index):
         if row_index>=0 and row_index<self.rows_count():
             del self.text[row_index]
+            self.modified=True
 
     def word_right(self,cursor):
         if cursor.y<0 or cursor.y>=self.rows_count():
@@ -86,6 +102,7 @@ class Document:
             row=row[0:cursor.x]+row[cursor.x+1:]
             self.text[cursor.y]=row
             self.invalidate()
+        self.modified=True
         return True
             
     def add_char(self,c,cursor,insert):
@@ -100,6 +117,7 @@ class Document:
         row=row[0:cursor.x]+c+row[rest:]
         self.text[cursor.y]=row
         self.invalidate()
+        self.modified=True
         return True
         
     def add_text(self, text, cursor, insert):
@@ -116,6 +134,7 @@ class Document:
                 self.add_char(c,cursor,insert)
                 cursor=cursor+Point(1,0)
                 res+=(1,0)
+        self.modified=True
         return res
     
     def new_line(self, cursor, insert):
@@ -128,6 +147,7 @@ class Document:
             row=self.get_row(cursor.y)
             cur=[row[0:cursor.x],row[cursor.x:]]
             self.text=self.text[0:cursor.y]+cur+self.text[cursor.y+1:]
+        self.modified=True
         return True
 
     def invalidate(self):

@@ -54,14 +54,14 @@ class Point(object):
 class Rect(object):
     def __init__(self,*args):
         if len(args)==2 and isinstance(args[0],Point) and isinstance(args[1],Point):
-            self.tl=args[0]
-            self.br=args[1]
+            self.tl=Point(args[0])
+            self.br=Point(args[1])
         elif len(args)==4:
             self.tl=Point(args[0],args[1])
             self.br=Point(args[2],args[3])
         elif len(args)==1 and isinstance(args[0],Rect):
-            self.tl=args[0].tl
-            self.br=args[0].br
+            self.tl=Point(args[0].tl)
+            self.br=Point(args[0].br)
         else:
             raise TypeError()
             
@@ -74,6 +74,15 @@ class Rect(object):
             
     def height(self):
         return self.br.y-self.tl.y
+        
+    def inflate(self,d):
+        if isinstance(d,Point):
+            self.tl-=d
+            self.br+=d
+        else:
+            self.tl-=Point(d,d)
+            self.br+=Point(d,d)
+        return self
             
     def is_point_inside(self,p):
         if not isinstance(p,Point):
