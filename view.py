@@ -140,12 +140,17 @@ class View:
                 self.delete_selection()
             else:
                 self.doc.delete_char(self.cursor)
-        if key=='KEY_BACKSPACE' and self.cursor.x>0:
+        if key=='KEY_BACKSPACE':
             if not self.selection is None:
                 self.delete_selection()
             else:
-                self.doc.delete_char(self.cursor-Point(1,0))
-                movement=(-1,0)
+                if self.cursor.x>0:
+                    self.doc.delete_char(self.cursor-Point(1,0))
+                    movement=(-1,0)
+                elif self.cursor.y>0:
+                    y=self.cursor.y-1
+                    movement=(len(self.doc.get_row(y))-self.cursor.x,-1)
+                    self.doc.join_next_row(self.cursor.y-1)
         if key=='KEY_BTAB' and not self.selection is None:
             sel=self.normalized_selection()
             inc=0
