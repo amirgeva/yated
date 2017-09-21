@@ -53,26 +53,33 @@ class View:
         if c==22:
             text=paste()
             if len(text)>0:
+                self.doc.start_compound()
                 if not self.selection is None:
                     self.delete_selection()
                 movement=self.doc.add_text(text,self.cursor,self.insert)
+                self.doc.stop_compound()
+        if c==26:
+            self.doc.undo()
         if c==ord('/') and not self.selection is None:
             sel=self.normalized_selection()
             inc=0
             if sel.br.x>0:
                 inc=1
+            self.doc.start_compound()
             for y in range(sel.tl.y,sel.br.y+inc):
                 row=self.doc.get_row(y)
                 if row.startswith('//'):
                     self.doc.delete_block(y,0,2)
                 else:
                     self.doc.add_text('//',Point(0,y),True)
+            self.doc.stop_compound()
         elif c>=32 and c<127:
             if not self.selection is None:
                 self.delete_selection()
             if self.doc.add_char(chr(c),self.cursor,self.insert):
                 movement=(1,0)
         if c==9:
+            self.doc.start_compound()
             if not self.selection is None:
                 sel=self.normalized_selection()
                 inc=0
@@ -82,10 +89,11 @@ class View:
                     self.doc.add_text(' '*self.tabsize,Point(0,y),self.insert)
             else:
                 movement=self.doc.add_text(' '*self.tabsize,self.cursor,self.insert)
+            self.doc.stop_compound()
         if c==10:
             if not self.selection is None:
                 self.delete_selection()
-            if self.doc.new_line(self.cursor,self.insert):
+            if self.doc.new_line(self.cursor):
                 movement=(-self.cursor.x,1)
         return movement
 
@@ -167,6 +175,7 @@ class View:
 
     def delete_selection(self):
         if not self.selection is None:
+            self.doc.start_compound()
             sel=self.normalized_selection()
             if sel.tl.y==sel.br.y:
                 self.doc.delete_block(sel.tl.y,sel.tl.x,sel.br.x)
@@ -177,6 +186,7 @@ class View:
                     self.doc.delete_row(sel.tl.y+1)
                 self.doc.join_next_row(sel.tl.y)
             self.cursor=sel.tl
+            self.doc.stop_compound()
         self.selection=None
         
     def process_app_shortcuts(self,key):
