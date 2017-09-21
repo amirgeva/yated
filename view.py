@@ -252,9 +252,13 @@ class View:
             sel = Rect(sel.br, sel.tl)
         return sel
 
+    def line_number_width(self):
+        s=str(len(self.doc.text))
+        return len(s)
+
     def render(self):
         if not self.doc.valid:
-            x0=self.doc.line_number_width()
+            x0=self.line_number_width()
             self.rownum_width=x0
             w=self.app.width-x0
             sel = self.normalized_selection()
@@ -263,7 +267,7 @@ class View:
             for y in range(1,self.app.height-1):
                 row_index=i0+y
                 self.app.move(Point(0,y))
-                rownum=str(row_index+1)+' '
+                rownum=str(row_index+1)
                 rownum=' '*(x0-len(rownum))+rownum
                 if row_index>=self.doc.rows_count():
                     rownum=' '*len(rownum)
