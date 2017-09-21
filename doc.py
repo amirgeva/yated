@@ -188,10 +188,6 @@ class Document:
         if not self.undoing:
             self.undos.append('}')
 
-    def line_number_width(self):
-        s=str(len(self.text))
-        return len(s)+1
-
     def undo(self):
         depth=0
         self.undoing=True
