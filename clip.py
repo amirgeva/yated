@@ -1,26 +1,52 @@
 import sys
 import atexit
 
-app=None
-clipboard=None
+impl=None
+copy_func=None
+paste_func=None
 
-def closeApp():
-    if not app is None:
-        app.exit()
+class qt_Clipboard:
+    def __init__(self):
+        from PyQt4 import QtGui
+        self.app=QtGui.QApplication(sys.argv)
+        self.clipboard=self.app.clipboard()
+        global copy_func
+        global paste_func
+        copy_func=self.copy
+        paste_func=self.paste
+  
+    def copy(self,text):
+        self.clipboard.setText(text)
+    
+    def paste(self):
+        return self.clipboard.text()
+      
+    def close(self):
+        self.app.exit()
 
-try:
-    from PyQt4 import QtGui
-    app=QtGui.QApplication(sys.argv)
-    atexit.register(closeApp)
-    clipboard=app.clipboard()
-except ImportError:
-    pass
+
+def cleanup():
+    if not impl is None:
+        impl.close()
+
+atexit.register(cleanup)
+
+def init_qt():
+    global impl
+    try:
+        impl=qt_Clipboard()
+    except ImportError:
+        pass
 
 def copy(text):
-    if not clipboard is None:
-        clipboard.setText(text)
+    if not copy_func is None:
+        copy_func(text)
 
 def paste():
-    if clipboard is None:
+    if paste_func is None:
         return ''
-    return clipboard.text()
+    return paste_func()
+
+if impl is None:
+    init_qt()
+
