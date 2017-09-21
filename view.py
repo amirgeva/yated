@@ -15,6 +15,7 @@ class View:
         self.active_dialog=None
         self.offset=Point(0,0)
         self.cursor=Point(0,0)
+        self.rownum_width=0
         self.selection=None
         self.lastx=0
         self.tabsize=4
@@ -59,7 +60,7 @@ class View:
                 movement=self.doc.add_text(text,self.cursor,self.insert)
                 self.doc.stop_compound()
         if c==26:
-            self.doc.undo()
+            movement=self.doc.undo()
         if c==ord('/') and not self.selection is None:
             sel=self.normalized_selection()
             inc=0
@@ -245,20 +246,29 @@ class View:
 
     def render(self):
         if not self.doc.valid:
+            x0=self.doc.line_number_width()
+            self.rownum_width=x0
+            w=self.app.width-x0
             sel = self.normalized_selection()
             i0=self.offset.y-1
             j0=self.offset.x
             for y in range(1,self.app.height-1):
                 row_index=i0+y
                 self.app.move(Point(0,y))
-                row=' '*self.app.width
+                rownum=str(row_index+1)+' '
+                rownum=' '*(x0-len(rownum))+rownum
+                if row_index>=self.doc.rows_count():
+                    rownum=' '*len(rownum)
+                self.app.write(rownum,2)
+                self.app.move(Point(x0,y))
+                row=' '*w
                 if row_index>=0 and row_index<self.doc.rows_count():
                     row=str(self.doc.get_row(row_index))
                     row=row[j0:]
-                    if len(row)>self.app.width:
-                        row=row[0:self.app.width]
-                    if len(row)<self.app.width:
-                        row=row+' '*(self.app.width-len(row))
+                    if len(row)>w:
+                        row=row[0:w]
+                    if len(row)<w:
+                        row=row+' '*(w-len(row))
                     if not sel is None:
                         if row_index>=sel.tl.y and row_index<=sel.br.y:
                             x=0
@@ -299,7 +309,7 @@ class View:
         return '\n'.join(res)
 
     def draw_cursor(self):
-        p=self.cursor-self.offset+Point(0,1)
+        p=self.cursor-self.offset+Point(self.rownum_width,1)
         self.app.move(p)
 
     def on_copy(self):
