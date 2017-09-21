@@ -10,7 +10,7 @@ from menus import Menu
 class Application:
     def __init__(self):
         self.scr=curses.initscr()
-        self.keylog=open('/tmp/key.log','w')
+        self.keylog=None
         curses.noecho()
         curses.raw()
         self.scr.keypad(1)
@@ -87,8 +87,11 @@ class Application:
                 self.scr.nodelay(False)
         except curses.error:
             key='ESC'
-        self.keylog.write('{}\n'.format(key))
-        self.keylog.flush()
+        if key == 'KEY_F(24)':
+            self.keylog=open('/tmp/key.log','w')
+        if not self.keylog is None:
+            self.keylog.write('{}\n'.format(key))
+            self.keylog.flush()
         return key
         
     def close(self):
