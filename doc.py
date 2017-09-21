@@ -48,6 +48,7 @@ class Document:
             if not self.undoing:
                 self.undos.append([self.new_line,Point(len(row),row_index)])
             self.modified=True
+        return Point(0,0)
             
     def insert_block(self,text,cursor):
         if cursor.y<0 or cursor.y>=self.rows_count():
@@ -58,6 +59,7 @@ class Document:
                 self.undos.append([self.delete_block,cursor.y,cursor.x,cursor.x+len(text)])
             row=row[0:cursor.x]+text+row[cursor.x:]
             self.text[cursor.y]=row
+        return Point(len(text),0)
 
     def delete_block(self,row_index,x0,x1):
         if row_index>=0 and row_index<self.rows_count():
@@ -68,6 +70,7 @@ class Document:
                 self.undos.append([self.insert_block,row[x0:x1],Point(x0,row_index)])
             self.text[row_index]=row[0:x0]+row[x1:]
             self.modified=True
+        return Point(0,0)
             
     def insert_row(self,row_index,text=''):
         if row_index>=0 and row_index<self.rows_count():
@@ -121,8 +124,6 @@ class Document:
         return Point(x,cursor.y)
         
     def delete_char(self,cursor):
-        if cursor.x<0 or cursor.y<0 or cursor.y>=self.rows_count():
-            return False
         row=self.text[cursor.y]
         if cursor.x<len(row):
             if not self.undoing:
@@ -133,11 +134,9 @@ class Document:
         else:
             self.join_next_row(cursor.y)
         self.modified=True
-        return True
+        return Point(0,0)
             
     def add_char(self,c,cursor,insert):
-        if cursor.x<0 or cursor.y<0 or cursor.y>=self.rows_count():
-            return False
         row=self.text[cursor.y]
         if not insert and cursor.x<len(row):
             self.delete_char(cursor)
@@ -147,7 +146,7 @@ class Document:
         self.text[cursor.y]=row
         self.invalidate()
         self.modified=True
-        return True
+        return Point(1,0)
         
     def add_text(self, text, cursor, insert):
         cx=cursor.x
@@ -167,15 +166,13 @@ class Document:
         return res
     
     def new_line(self, cursor):
-        if cursor.x<0 or cursor.y<0:
-            return False
         row=self.get_row(cursor.y)
         cur=[row[0:cursor.x],row[cursor.x:]]
         self.text=self.text[0:cursor.y]+cur+self.text[cursor.y+1:]
         if not self.undoing:
             self.undos.append([self.join_next_row,cursor.y])
         self.modified=True
-        return True
+        return Point(-cursor.x,1)
 
     def invalidate(self):
         self.valid=False
@@ -191,9 +188,14 @@ class Document:
         if not self.undoing:
             self.undos.append('}')
 
+    def line_number_width(self):
+        s=str(len(self.text))
+        return len(s)+1
+
     def undo(self):
         depth=0
         self.undoing=True
+        res=Point(0,0)
         while len(self.undos)>0:
             cmd=self.undos[-1]
             del self.undos[-1]
@@ -204,8 +206,8 @@ class Document:
                     depth-=1
             else:
                 f=cmd[0]
-                f(*cmd[1:])
+                res+=f(*cmd[1:])
             if depth==0:
                 break
         self.undoing=False
-
+        return res
