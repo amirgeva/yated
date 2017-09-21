@@ -90,7 +90,7 @@ class Application:
         if key == 'KEY_F(24)':
             self.keylog=open('/tmp/key.log','w')
         if not self.keylog is None:
-            self.keylog.write('{}\n'.format(key))
+            self.keylog.write('{}   {}\n'.format(key,hex(ord(key[0]))))
             self.keylog.flush()
         return key
         
