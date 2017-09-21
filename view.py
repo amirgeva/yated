@@ -94,8 +94,16 @@ class View:
         if c==10:
             if not self.selection is None:
                 self.delete_selection()
-            if self.doc.new_line(self.cursor):
-                movement=(-self.cursor.x,1)
+            row=self.doc.get_row(self.cursor.y)
+            indent=0
+            for i in range(0,len(row)):
+                if row[i]==' ':
+                    indent+=1
+                else:
+                    break
+            movement=self.doc.new_line(self.cursor)
+            self.doc.insert_block(' '*indent,self.cursor+movement)
+            movement+=Point(indent,0)
         return movement
 
     def process_movement(self,movement):
