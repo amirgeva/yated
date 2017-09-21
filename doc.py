@@ -102,6 +102,8 @@ class Document:
             row=row[0:cursor.x]+row[cursor.x+1:]
             self.text[cursor.y]=row
             self.invalidate()
+        else:
+            self.join_next_row(cursor.y)
         self.modified=True
         return True
             
