@@ -11,3 +11,10 @@ def count_leading_spaces(s):
             break
         n+=1
     return n
+    
+def align(s,n):
+    if len(s)>n:
+        return s[0:n]
+    if len(s)<n:
+        return s+' '*(n-len(s))
+    return s
