@@ -230,10 +230,14 @@ class View:
         if key=='ESC':
             self.active_dialog=None
         else:
-            action=self.active_dialog.process_key(key)
-            if isinstance(action, collections.Callable):
+            actions=self.active_dialog.process_key(key)
+            if not actions is None:
                 self.active_dialog=None
-                action()
+                if not isinstance(actions,list):
+                    actions=[actions]
+                for action in actions:
+                    if isinstance(action, collections.Callable):
+                        action()
         
     def process_input(self):
         key=self.app.getkey()
@@ -311,6 +315,9 @@ class View:
                         self.app.write(row,1)
                 else:
                     self.app.write(row,2)
+        self.app.move(Point(0,self.app.height-1))
+        s=utils.align(self.doc.filename,self.app.width-1)        
+        self.app.write(s,4)
         self.draw_cursor()
         if not self.active_menu is None:
             self.active_menu.draw(self.app)
@@ -350,29 +357,30 @@ class View:
         curses.ungetch(22)
         
     def on_file_open(self):
-        self.active_dialog=dialogs.FileDialog(self.doc.load)
+        if self.doc.modified:
+            self.active_dialog=dialogs.MessageBox('Save File? Y/N')
+            self.active_dialog.add_key('Y',[self.on_file_save, self.on_file_open])
+            self.active_dialog.add_key('N',[self.on_file_discard, self.on_file_open])
+        else:
+            self.active_dialog=dialogs.FileDialog(self.doc.load)
 
     def on_file_save(self):
-        self.doc.save()
+        if not self.doc.save():
+            self.active_dialog=dialogs.FileDialog(self.doc.saveas)
 
     def on_file_save_as(self):
-        pass
+        self.active_dialog=dialogs.FileDialog(self.doc.saveas)
 
     def on_file_exit(self):
         if self.doc.modified:
             self.active_dialog=dialogs.MessageBox('Save File? Y/N')
-            self.active_dialog.add_key('Y',self.on_file_save_exit)
-            self.active_dialog.add_key('N',self.on_file_discard)
+            self.active_dialog.add_key('Y',[self.on_file_save, self.on_file_exit])
+            self.active_dialog.add_key('N',[self.on_file_discard, self.on_file_exit])
         else:
             raise utils.ExitException()
             
-    def on_file_save_exit(self):
-        self.doc.save()
-        self.on_file_exit()
-            
     def on_file_discard(self):
         self.doc.modified=False
-        self.on_file_exit()
 
     def on_colors(self):
         self.active_dialog=dialogs.ColorConfigDialog()
