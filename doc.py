@@ -23,6 +23,10 @@ class Document:
             pass
             #message_box('Failed to open {}'.format(filename))
             
+    def saveas(self,path):
+        self.filename=path
+        return self.save()
+        
     def save(self):
         if len(self.filename)==0:
             return False
@@ -30,6 +34,7 @@ class Document:
         f.write('\n'.join(self.text))
         f.close()
         self.modified=False
+        return True
 
     def rows_count(self):
         return len(self.text)
