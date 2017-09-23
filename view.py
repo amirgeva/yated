@@ -232,6 +232,7 @@ class View:
         else:
             action=self.active_dialog.process_key(key)
             if isinstance(action, collections.Callable):
+                self.active_dialog=None
                 action()
         
     def process_input(self):
@@ -347,9 +348,9 @@ class View:
 
     def on_paste(self):
         curses.ungetch(22)
-
+        
     def on_file_open(self):
-        pass
+        self.active_dialog=dialogs.FileDialog(self.doc.load)
 
     def on_file_save(self):
         self.doc.save()
