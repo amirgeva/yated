@@ -16,6 +16,7 @@ class Menu(object):
         self.title=title
         self.pos=Point(0,0)
         self.key=''
+        self.cur=0
         self.items=[]
         self.width=4
         
@@ -34,6 +35,15 @@ class Menu(object):
         self.items.append(item)
         self.width=max(self.width,4+len(item.title))
         
+    def select_next(self):
+        self.cur=(self.cur+1)%len(self.items)
+
+    def select_prev(self):
+        self.cur=(self.cur-1)%len(self.items)
+        
+    def activate_current(self):
+        self.items[self.cur].activate()
+        
     def draw(self,scr):
         color=4
         pos=Point(self.pos)
@@ -42,13 +52,17 @@ class Menu(object):
         for i in range(0,self.width-2):
             scr.write(curses.ACS_HLINE,color)
         scr.write(curses.ACS_URCORNER,color)
+        index=0
         for item in self.items:
+            color=4
             pos+=(0,1)
             scr.move(pos)
             scr.write(curses.ACS_VLINE,color)
             scr.write(' ',color)
             rev=False
             n=0
+            if index==self.cur:
+                color=3
             for c in item.title:
                 if c=='&':
                     rev=True
@@ -60,9 +74,12 @@ class Menu(object):
                         item.key=c
                     scr.write(c,color,attr)
                     n=n+1
-            s=' '*(self.width-3-n)
+            s=' '*(self.width-4-n)
             scr.write(s,color)
+            color=4
+            scr.write(' ',color)
             scr.write(curses.ACS_VLINE,color)
+            index+=1
         pos+=(0,1)
         scr.move(pos)
         scr.write(curses.ACS_LLCORNER,color)

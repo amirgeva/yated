@@ -209,6 +209,14 @@ class View:
             self.active_menu=self.app.menu_bar.items[(menu_index-1)%n]
         if key=='KEY_RIGHT':
             self.active_menu=self.app.menu_bar.items[(menu_index+1)%n]
+        if key=='KEY_DOWN':
+            self.active_menu.select_next()
+        if key=='KEY_UP':
+            self.active_menu.select_prev()
+        if key=='\012':
+            self.active_menu.activate_current()
+            self.active_menu=None
+            return
         if key=='ESC':
             self.active_menu=None
             return
