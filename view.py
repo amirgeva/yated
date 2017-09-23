@@ -356,12 +356,21 @@ class View:
     def on_paste(self):
         curses.ungetch(22)
         
-    def on_file_open(self):
+    def on_ask_save(self,action):
         if self.doc.modified:
             self.active_dialog=dialogs.MessageBox('Save File? Y/N')
-            self.active_dialog.add_key('Y',[self.on_file_save, self.on_file_open])
-            self.active_dialog.add_key('N',[self.on_file_discard, self.on_file_open])
-        else:
+            self.active_dialog.add_key('Y',[self.on_file_save, action])
+            self.active_dialog.add_key('N',[self.on_file_discard, action])
+            return True
+        return False
+        
+    def on_file_new(self):
+        if not self.on_ask_save(self.on_file_new):
+            self.doc.clear()
+            self.cursor=Point(0,0)
+        
+    def on_file_open(self):
+        if not self.on_ask_save(self.on_file_open):
             self.active_dialog=dialogs.FileDialog(self.doc.load)
 
     def on_file_save(self):
@@ -372,11 +381,7 @@ class View:
         self.active_dialog=dialogs.FileDialog(self.doc.saveas)
 
     def on_file_exit(self):
-        if self.doc.modified:
-            self.active_dialog=dialogs.MessageBox('Save File? Y/N')
-            self.active_dialog.add_key('Y',[self.on_file_save, self.on_file_exit])
-            self.active_dialog.add_key('N',[self.on_file_discard, self.on_file_exit])
-        else:
+        if not self.on_ask_save(self.on_file_exit):
             raise utils.ExitException()
             
     def on_file_discard(self):
