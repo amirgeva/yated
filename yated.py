@@ -115,7 +115,8 @@ class Application:
     def draw_menu(self):
         color=4
         self.move((0,0))
-        self.write(' ',color)
+        self.write(' '*self.width,color)
+        self.move((1,0))
         pos=Point(2,1)
         for item in self.menu_bar.items:
             title=item.title
