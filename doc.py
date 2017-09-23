@@ -2,9 +2,13 @@ from ptypes import Point
 
 class Document:
     def __init__(self,filename=''):
+        self.clear()
+        self.filename=filename
+        
+    def clear(self):
+        self.filename=''
         self.text=['']
         self.valid=False
-        self.filename=filename
         self.undos=[]
         self.undoing=False
         self.modified=False
