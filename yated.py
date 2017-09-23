@@ -153,7 +153,8 @@ def fill_menu(menu,desc):
             
 
 def create_menu(view):
-    desc=[ ('&File',[ ('&Open',view.on_file_open),
+    desc=[ ('&File',[ ('&New',view.on_file_new),
+                      ('&Open',view.on_file_open),
                       ('&Save',view.on_file_save),
                       ('Save &As',view.on_file_save_as),
                       ('&Exit',view.on_file_exit),
