@@ -41,6 +41,8 @@ class FileDialog(Dialog):
     def __init__(self,action):
         super(FileDialog,self).__init__(60,20)
         self.dir=os.getcwd()
+        self.browse_mode=True
+        self.edit_text=''
         self.ofs=0
         self.cur=0
         self.items=[]
@@ -62,7 +64,8 @@ class FileDialog(Dialog):
         super(FileDialog,self).draw(app)
         pos=self.rect.tl+Point(1,1)
         app.move(pos)
-        app.write(self.dir,1)
+        app.write(self.dir+'/',1)
+        self.editpos=pos+(len(self.dir)+1,0)
         pos+=(2,1)
         for i in range(0,17):
             idx=i+self.ofs
@@ -80,32 +83,49 @@ class FileDialog(Dialog):
             else:
                 app.write(' '*50,4)
             pos+=(0,1)
+        if not self.browse_mode:
+            app.move(self.editpos)
+            app.write(self.edit_text,1)
         
     def process_key(self,key):
-        if key=='KEY_DOWN':
-            self.cur=(self.cur+1)%len(self.items)
-        if key=='KEY_UP':
-            self.cur=(self.cur-1)%len(self.items)
-        if key=='KEY_END':
-            self.cur=len(self.items)-1
-        if key=='KEY_HOME':
-            self.cur=0
-        if key=='KEY_PPAGE':
-            self.cur=(self.cur-17)%len(self.items)
-        if key=='KEY_NPAGE':
-            self.cur=(self.cur+17)%len(self.items)
-        if key=='\012': # Enter
-            name=self.items[self.cur]
-            path=os.path.abspath(os.path.join(self.dir,name))
-            if name.endswith('/'):
-                self.dir=path
-                self.fill_items()
-            else:
+        if self.browse_mode:
+            if key=='\011': # tab
+                self.browse_mode=False
+            if key=='KEY_DOWN':
+                self.cur=(self.cur+1)%len(self.items)
+            if key=='KEY_UP':
+                self.cur=(self.cur-1)%len(self.items)
+            if key=='KEY_END':
+                self.cur=len(self.items)-1
+            if key=='KEY_HOME':
+                self.cur=0
+            if key=='KEY_PPAGE':
+                self.cur=(self.cur-17)%len(self.items)
+            if key=='KEY_NPAGE':
+                self.cur=(self.cur+17)%len(self.items)
+            if key=='\012': # Enter
+                name=self.items[self.cur]
+                path=os.path.abspath(os.path.join(self.dir,name))
+                if name.endswith('/'):
+                    self.dir=path
+                    self.fill_items()
+                else:
+                    return lambda: self.action(path)
+            if self.cur<self.ofs or self.cur>=(self.ofs+17):
+                self.ofs=self.cur-8
+                if self.ofs<0:
+                    self.ofs=0
+        else:
+            if key=='\011': # tab
+                self.browse_mode=True
+            if len(key)==1 and ord(key)>32 and ord(key)<128:
+                self.edit_text+=key
+            if key=='KEY_BACKSPACE' and len(self.edit_text)>0:
+                self.edit_text=self.edit_text[0:-1]
+            if key=='\012':
+                path=os.path.abspath(os.path.join(self.dir,self.edit_text))
                 return lambda: self.action(path)
-        if self.cur<self.ofs or self.cur>=(self.ofs+17):
-            self.ofs=self.cur-8
-            if self.ofs<0:
-                self.ofs=0
+        return None
     
 
 class ConfigDialog(Dialog):
@@ -159,5 +179,5 @@ class ColorConfigDialog(Dialog):
         config.set('fg{}'.format(self.cur),fg)
         config.set('bg{}'.format(self.cur),bg)
         curses.init_pair(self.cur,fg,bg)
-    
+        return None
     
