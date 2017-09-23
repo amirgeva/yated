@@ -1,6 +1,7 @@
 from ptypes import Point, Rect
 import config
 import curses
+import os
 
 class Dialog(object):
     def __init__(self,width,height):
@@ -35,6 +36,77 @@ class MessageBox(Dialog):
         super(MessageBox,self).draw(app)
         app.move(Point(self.rect.tl.x+4,self.rect.tl.y+4))
         app.write(self.prompt,4)
+        
+class FileDialog(Dialog):
+    def __init__(self,action):
+        super(FileDialog,self).__init__(60,20)
+        self.dir=os.getcwd()
+        self.ofs=0
+        self.cur=0
+        self.items=[]
+        self.fill_items()
+        self.action=action
+    
+    def fill_items(self):
+        l=os.listdir(self.dir)
+        for i in range(0,len(l)):
+            name=l[i]
+            path=os.path.join(self.dir,name)
+            if os.path.isdir(path):
+                name=name+'/'
+            l[i]=name
+        l.insert(0,'../')
+        self.items=l
+
+    def draw(self,app):
+        super(FileDialog,self).draw(app)
+        pos=self.rect.tl+Point(1,1)
+        app.move(pos)
+        app.write(self.dir,1)
+        pos+=(2,1)
+        for i in range(0,17):
+            idx=i+self.ofs
+            app.move(pos)
+            if idx<len(self.items):
+                attr=0
+                if self.cur==idx:
+                    attr=curses.A_REVERSE
+                s=self.items[idx]
+                if len(s)>50:
+                    s=s[0:50]
+                if len(s)<50:
+                    s=s+' '*(50-len(s))
+                app.write(s,4,attr)
+            else:
+                app.write(' '*50,4)
+            pos+=(0,1)
+        
+    def process_key(self,key):
+        if key=='KEY_DOWN':
+            self.cur=(self.cur+1)%len(self.items)
+        if key=='KEY_UP':
+            self.cur=(self.cur-1)%len(self.items)
+        if key=='KEY_END':
+            self.cur=len(self.items)-1
+        if key=='KEY_HOME':
+            self.cur=0
+        if key=='KEY_PPAGE':
+            self.cur=(self.cur-17)%len(self.items)
+        if key=='KEY_NPAGE':
+            self.cur=(self.cur+17)%len(self.items)
+        if key=='\012': # Enter
+            name=self.items[self.cur]
+            path=os.path.abspath(os.path.join(self.dir,name))
+            if name.endswith('/'):
+                self.dir=path
+                self.fill_items()
+            else:
+                return lambda: self.action(path)
+        if self.cur<self.ofs or self.cur>=(self.ofs+17):
+            self.ofs=self.cur-8
+            if self.ofs<0:
+                self.ofs=0
+    
 
 class ConfigDialog(Dialog):
     def __init__(self):
