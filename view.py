@@ -1,7 +1,7 @@
 import collections
 import curses
 from ptypes import Point, Rect
-from dialogs import Dialog
+import dialogs
 from clip import copy,paste
 import utils
 
@@ -227,9 +227,12 @@ class View:
                 return
                 
     def process_dialog_keys(self,key):
-        action=self.active_dialog.process_key(key)
-        if isinstance(action, collections.Callable):
-            action()
+        if key=='ESC':
+            self.active_dialog=None
+        else:
+            action=self.active_dialog.process_key(key)
+            if isinstance(action, collections.Callable):
+                action()
         
     def process_input(self):
         key=self.app.getkey()
@@ -356,7 +359,7 @@ class View:
 
     def on_file_exit(self):
         if self.doc.modified:
-            self.active_dialog=Dialog('Save File? Y/N')
+            self.active_dialog=dialogs.MessageBox('Save File? Y/N')
             self.active_dialog.add_key('Y',self.on_file_save_exit)
             self.active_dialog.add_key('N',self.on_file_discard)
         else:
@@ -369,6 +372,9 @@ class View:
     def on_file_discard(self):
         self.doc.modified=False
         self.on_file_exit()
+
+    def on_colors(self):
+        self.active_dialog=dialogs.ColorConfigDialog()
 
     def on_help_about(self):
         pass

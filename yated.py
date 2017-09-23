@@ -2,6 +2,7 @@
 import curses
 import sys
 import utils
+import config
 from ptypes import Point, Rect
 from doc import Document
 from view import View
@@ -22,10 +23,20 @@ class Application:
         self.shortcuts={}
         curses.start_color()
         curses.use_default_colors()
-        curses.init_pair(1,curses.COLOR_YELLOW,curses.COLOR_BLUE)
-        curses.init_pair(2,curses.COLOR_WHITE,curses.COLOR_GREEN)
-        curses.init_pair(3,curses.COLOR_BLACK,curses.COLOR_WHITE)
-        curses.init_pair(4,curses.COLOR_BLACK,curses.COLOR_CYAN)
+        curses.init_pair(1,config.getint('fg1',curses.COLOR_YELLOW),
+                           config.getint('bg1',curses.COLOR_BLUE))
+        curses.init_pair(2,config.getint('fg2',curses.COLOR_WHITE),
+                           config.getint('bg2',curses.COLOR_GREEN))
+        curses.init_pair(3,config.getint('fg3',curses.COLOR_BLACK),
+                           config.getint('bg3',curses.COLOR_WHITE))
+        curses.init_pair(4,config.getint('fg4',curses.COLOR_BLACK),
+                           config.getint('bg4',curses.COLOR_CYAN))
+        curses.init_pair(5,config.getint('fg5',curses.COLOR_YELLOW),
+                           config.getint('bg5',curses.COLOR_BLUE))
+        curses.init_pair(6,config.getint('fg6',curses.COLOR_YELLOW),
+                           config.getint('bg6',curses.COLOR_BLUE))
+        curses.init_pair(7,config.getint('fg7',curses.COLOR_YELLOW),
+                           config.getint('bg7',curses.COLOR_BLUE))
         sys.stdout.write('\033]12;yellow\007')
         
     def set_menu(self,bar):
@@ -148,10 +159,12 @@ def create_menu(view):
                     ]),
            ('&Edit',[ ('&Copy',view.on_copy),
                       ('C&ut',view.on_cut),
-                      ('&Paste',view.on_paste)
+                      ('&Paste',view.on_paste),
                     ]),
-           ('&Help',[ ('&About',view.on_help_about)
-                    ])
+           ('&Options', [ ('&Colors',view.on_colors),
+                    ]),
+           ('&Help',[ ('&About',view.on_help_about),
+                    ]),
          ]
     bar=Menu('')
     fill_menu(bar,desc)
