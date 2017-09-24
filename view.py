@@ -382,10 +382,9 @@ class View:
             config.set('find_text',text)
             config.set('find_case',case)
             config.set('find_regex',regex)
-            last_cursor=self.cursor
-            start_cursor=self.cursor
-            while last_cursor>=start_cursor or self.cursor<start_cursor:
-                last_cursor=self.cursor
+            count=0
+            start_cursor=Point(self.cursor)
+            while count<=self.doc.rows_count():
                 x=self.doc.find_in_row(self.cursor,text,case,regex)
                 if x>=0:
                     self.cursor=Point(x,self.cursor.y)
@@ -393,6 +392,8 @@ class View:
                     return True
                 else:
                     self.cursor=Point(0,(self.cursor.y+1)%self.doc.rows_count())
+                    count+=1
+            self.app.move(start_cursor)
         except KeyError:
             pass
         return False
