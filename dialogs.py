@@ -126,17 +126,140 @@ class FileDialog(Dialog):
                 path=os.path.abspath(os.path.join(self.dir,self.edit_text))
                 return lambda: self.action(path)
         return None
-    
 
-class ConfigDialog(Dialog):
-    def __init__(self):
-        super(ConfigDialog,self).__init__(60,20)
+class FormWidget(object):
+    def __init__(self,pos):
+        self.text=''
+        self.pos=pos
+        self.tabstop=False
+
+class FormCheckbox(FormWidget):
+    def __init__(self,pos,state=False):
+        super(FormCheckbox,self).__init__(pos)
+        self.tabstop=True
+        self.state=state
+        
+    def details(self):
+        return self.state
+        
+    def draw(self,app,tl):
+        app.move(self.pos+tl-Point(1,0))
+        mark='X' if self.state else ' '
+        app.write('[{}]'.format(mark),4)
+        app.move(self.pos+tl)
+        
+    def process_key(self,key):
+        if key==' ':
+            self.state=not self.state
+
+class FormLabel(FormWidget):
+    def __init__(self,pos,text):
+        super(FormLabel,self).__init__(pos)
+        self.text=text
+        self.color=4
+        self.pad=0
+
+    def draw(self,app,tl):
+        app.move(self.pos+tl)
+        app.write(self.text,self.color)
+        if self.pad>len(self.text):
+            app.write(' '*(self.pad-len(self.text)),self.color)
+        
+class FormEdit(FormLabel):
+    def __init__(self,pos,text,maxlen):
+        super(FormEdit,self).__init__(pos,text)
+        self.tabstop=True
+        self.color=1
+        self.maxlen=maxlen
+        self.pad=maxlen
+        
+    def details(self):
+        return self.text
+        
+    def draw(self,app,tl):
+        super(FormEdit,self).draw(app,tl)
+        app.move(self.pos+tl+Point(len(self.text),0))
+
+    def process_key(self,key):
+        if len(key)==1 and ord(key[0])>=32 and ord(key[0])<128:
+            self.text=self.text+key
+        if key=='KEY_BACKSPACE' and len(self.text)>0:
+            self.text=self.text[0:-1]
+
+    
+class FormDialog(Dialog):
+    def __init__(self,w,h):
+        super(FormDialog,self).__init__(w,h)
+        self.widgets=[]
+        self.named_widgets={}
+        self.cur=None
+
+    def details(self,vals):
+        res={}
+        for val in vals:
+            res[val[0]]=val[1]
+        for name in self.named_widgets:
+            res[name]=self.named_widgets.get(name).details()
+        return res
+
+    def add_widget(self,name,widget):
+        if isinstance(widget,FormWidget):
+            self.widgets.append(widget)
+            if name:
+                self.named_widgets[name]=widget
+            if self.cur is None and widget.tabstop:
+                self.cur=len(self.widgets)-1
 
     def draw(self,app):
-        super(ConfigDialog,self).draw(app)
-        pos=self.rect.tl+Point(2,2)
-        #for item in self.items:
+        super(FormDialog,self).draw(app)
+        for i in range(0,len(self.widgets)):
+            widget=self.widgets[i]
+            if self.cur != i:
+                widget.draw(app,self.rect.tl)
+        if not self.cur is None:
+            self.widgets[self.cur].draw(app,self.rect.tl)
             
+    def process_key(self,key):
+        if key==chr(9): # tab
+            while True:
+                self.cur=(self.cur+1)%len(self.widgets)
+                if self.widgets[self.cur].tabstop:
+                    break
+        if key=='KEY_BTAB': # back-tab
+            while True:
+                self.cur=(self.cur-1)%len(self.widgets)
+                if self.widgets[self.cur].tabstop:
+                    break
+        if not self.cur is None:
+            self.widgets[self.cur].process_key(key)
+        return None
+
+
+class FindReplaceDialog(FormDialog):
+    def __init__(self,find_action,replace_action):
+        super(FindReplaceDialog,self).__init__(60,20)
+        self.find_action=find_action
+        self.replace_action=replace_action
+        self.add_widget('',FormLabel(Point(2,2),'Find:'))
+        self.add_widget('find',FormEdit(Point(12,2),config.get('find_text'),40))
+        self.add_widget('',FormLabel(Point(2,3),'Replace:'))
+        self.add_widget('replace',FormEdit(Point(12,3),config.get('find_replace'),40))
+        self.add_widget('case',FormCheckbox(Point(4,5),config.getbool('find_case')))
+        self.add_widget('',FormLabel(Point(8,5),'Case Sensitive'))
+        self.add_widget('regex',FormCheckbox(Point(4,6),config.getbool('find_regex')))
+        self.add_widget('',FormLabel(Point(8,6),'Regular Expressions'))
+        #
+        self.add_widget('',FormLabel(Point(2,16),'Enter to find, Ctrl+R to replace, Ctrl+A to replace all'))
+        
+    def process_key(self,key):
+        if key==chr(18): # Ctrl+R
+            return lambda: self.replace_action(self.details([('all',False)]))
+        if key==chr(1): # Ctrl+A
+            return lambda: self.replace_action(self.details([('all',True)]))
+        if key==chr(10): # Enter
+            return lambda: self.find_action(self.details([]))
+        return super(FindReplaceDialog,self).process_key(key)
+        
 
 class ColorConfigDialog(Dialog):
     def __init__(self):
