@@ -48,6 +48,14 @@ class Document:
             return ''
         return self.text[index]
         
+    def find_in_row(self,cursor,text,case,regex):
+        if cursor.y<0 or cursor.y>=self.rows_count():
+            return -1
+        row=self.get_row(cursor.y)
+        if not case:
+            return row.lower().find(text.lower(),cursor.x+1)
+        return row.find(text,cursor.x+1)
+        
     def join_next_row(self,row_index):
         if row_index>=0 and row_index<(self.rows_count()-1):
             row=self.get_row(row_index)
