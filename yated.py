@@ -41,6 +41,8 @@ class Application:
         
     def set_menu(self,bar):
         self.menu_bar=bar
+        if len(bar.items)>0:
+            self.shortcuts['KEY_F(10)']=bar.items[0]
 
     def move(self,pos):
         if not isinstance(pos,Point):
@@ -98,7 +100,7 @@ class Application:
                 self.scr.nodelay(False)
         except curses.error:
             key='ESC'
-        if key == 'KEY_F(24)':
+        if key == 'KEY_F(24)': # For debugging purposes
             self.keylog=open('/tmp/key.log','w')
         if not self.keylog is None:
             self.keylog.write('{}   {}\n'.format(key,hex(ord(key[0]))))
@@ -153,16 +155,16 @@ def fill_menu(menu,desc):
             
 
 def create_menu(view):
-    desc=[ ('&File',[ ('&New',view.on_file_new),
-                      ('&Open',view.on_file_open),
-                      ('&Save',view.on_file_save),
+    desc=[ ('&File',[ ('&New     Ctrl+N',view.on_file_new),
+                      ('&Open    Ctrl+O',view.on_file_open),
+                      ('&Save    Ctrl+S',view.on_file_save),
                       ('Save &As',view.on_file_save_as),
-                      ('&Exit',view.on_file_exit),
+                      ('&Exit    Ctrl+Q',view.on_file_exit),
                     ]),
-           ('&Edit',[ ('&Copy',view.on_copy),
-                      ('C&ut',view.on_cut),
-                      ('&Paste',view.on_paste),
-                      ('&Find/Replace',view.on_find_replace),
+           ('&Edit',[ ('&Copy   Ctrl+C',view.on_copy),
+                      ('C&ut    Ctrl+X',view.on_cut),
+                      ('&Paste  Ctrl+V',view.on_paste),
+                      ('&Find   Ctrl+F',view.on_find_replace),
                     ]),
            ('&Options', [ ('&Colors',view.on_colors),
                           ('&Editor',view.on_cfg_editor),
