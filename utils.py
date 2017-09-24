@@ -18,3 +18,6 @@ def align(s,n):
     if len(s)<n:
         return s+' '*(n-len(s))
     return s
+    
+def ctrl(key):
+    return ord(key)-ord('A')+1
