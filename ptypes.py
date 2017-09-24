@@ -19,6 +19,24 @@ class Point(object):
     def __str__(self):
         return '{},{}'.format(self.x,self.y)
         
+    def __lt__(self,p):
+        if not isinstance(p,Point):
+            p=Point(p)
+        if self.y<p.y:
+            return True
+        if self.y>p.y:
+            return False
+        return self.x<p.x
+        
+    def __le__(self,p):
+        return (self<p or self==p)
+        
+    def __gt__(self,p):
+        return not (self<p or self==p)
+        
+    def __ge__(self,p):
+        return not (self<p)
+        
     def __eq__(self,p):
         if not isinstance(p,Point):
             p=Point(p)
