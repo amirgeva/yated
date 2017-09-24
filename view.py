@@ -356,6 +356,9 @@ class View:
     def on_paste(self):
         curses.ungetch(22)
         
+    def on_find_replace(self):
+        pass
+        
     def on_ask_save(self,action):
         if self.doc.modified:
             self.active_dialog=dialogs.MessageBox('Save File? Y/N')
@@ -389,6 +392,9 @@ class View:
 
     def on_colors(self):
         self.active_dialog=dialogs.ColorConfigDialog()
+        
+    def on_cfg_editor(self):
+        pass
 
     def on_help_about(self):
         pass
