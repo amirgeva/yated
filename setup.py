@@ -29,7 +29,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/amirgeva/ted',
+    url='https://github.com/amirgeva/yated',
 
     # Author details
     author='Amir Geva',

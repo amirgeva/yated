@@ -89,7 +89,7 @@ class FileDialog(Dialog):
         
     def process_key(self,key):
         if self.browse_mode:
-            if key=='\011': # tab
+            if key==chr(9): # tab
                 self.browse_mode=False
             if key=='KEY_DOWN':
                 self.cur=(self.cur+1)%len(self.items)
@@ -103,7 +103,7 @@ class FileDialog(Dialog):
                 self.cur=(self.cur-17)%len(self.items)
             if key=='KEY_NPAGE':
                 self.cur=(self.cur+17)%len(self.items)
-            if key=='\012': # Enter
+            if key==chr(10): # Enter
                 name=self.items[self.cur]
                 path=os.path.abspath(os.path.join(self.dir,name))
                 if name.endswith('/'):
@@ -116,13 +116,13 @@ class FileDialog(Dialog):
                 if self.ofs<0:
                     self.ofs=0
         else:
-            if key=='\011': # tab
+            if key==chr(9): # tab
                 self.browse_mode=True
             if len(key)==1 and ord(key)>32 and ord(key)<128:
                 self.edit_text+=key
             if key=='KEY_BACKSPACE' and len(self.edit_text)>0:
                 self.edit_text=self.edit_text[0:-1]
-            if key=='\012':
+            if key==chr(10):
                 path=os.path.abspath(os.path.join(self.dir,self.edit_text))
                 return lambda: self.action(path)
         return None

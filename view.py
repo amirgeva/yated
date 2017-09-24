@@ -213,7 +213,7 @@ class View:
             self.active_menu.select_next()
         if key=='KEY_UP':
             self.active_menu.select_prev()
-        if key=='\012':
+        if key==chr(10):
             self.active_menu.activate_current()
             self.active_menu=None
             return
