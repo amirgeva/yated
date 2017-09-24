@@ -4,6 +4,7 @@ from ptypes import Point, Rect
 import dialogs
 from clip import copy,paste
 import utils
+import config
 
 
 class View:
@@ -13,6 +14,7 @@ class View:
         self.doc=doc
         self.active_menu=None
         self.active_dialog=None
+        self.last_find_action=None
         self.offset=Point(0,0)
         self.cursor=Point(0,0)
         self.rownum_width=0
@@ -49,9 +51,13 @@ class View:
         movement=None
         #if c==27:
         #    raise utils.ExitException()
-        if c==3:
+        if c==utils.ctrl('C'):
             self.on_copy()
-        if c==22:
+        if c==utils.ctrl('F'):
+            self.on_find_replace()
+        if c==utils.ctrl('X'):
+            self.on_cut()
+        if c==utils.ctrl('V'):
             text=paste()
             if len(text)>0:
                 self.doc.start_compound()
@@ -59,7 +65,15 @@ class View:
                     self.delete_selection()
                 movement=self.doc.add_text(text,self.cursor,self.insert)
                 self.doc.stop_compound()
-        if c==26:
+        if c==utils.ctrl('N'):
+            self.on_file_new()
+        if c==utils.ctrl('S'):
+            self.on_file_save()
+        if c==utils.ctrl('O'):
+            self.on_file_open()
+        if c==utils.ctrl('Q'):
+            self.on_file_exit()
+        if c==26: # Ctrl+Z
             movement=self.doc.undo()
         if c==ord('/') and not self.selection is None:
             sel=self.normalized_selection()
@@ -152,6 +166,9 @@ class View:
         
     def process_special_keys(self,key):
         movement=None
+        if key=='KEY_F(3)':
+            if not self.last_find_action is None:
+                self.last_find_action()
         if key=='KEY_DC':
             if not self.selection is None:
                 self.delete_selection()
@@ -232,12 +249,12 @@ class View:
         else:
             actions=self.active_dialog.process_key(key)
             if not actions is None:
-                self.active_dialog=None
                 if not isinstance(actions,list):
                     actions=[actions]
                 for action in actions:
                     if isinstance(action, collections.Callable):
                         action()
+                self.active_dialog=None
         
     def process_input(self):
         key=self.app.getkey()
@@ -356,8 +373,46 @@ class View:
     def on_paste(self):
         curses.ungetch(22)
         
+    def find(self,details):
+        try:
+            self.last_find_action=lambda: self.find(details)
+            text=details.get('find')
+            case=details.get('case')
+            regex=details.get('regex')
+            config.set('find_text',text)
+            config.set('find_case',case)
+            config.set('find_regex',regex)
+            last_cursor=self.cursor
+            start_cursor=self.cursor
+            while last_cursor>=start_cursor or self.cursor<start_cursor:
+                last_cursor=self.cursor
+                x=self.doc.find_in_row(self.cursor,text,case,regex)
+                if x>=0:
+                    self.cursor=Point(x,self.cursor.y)
+                    self.scroll_display()
+                    return True
+                else:
+                    self.cursor=Point(0,(self.cursor.y+1)%self.doc.rows_count())
+        except KeyError:
+            pass
+        return False
+    
+    def replace(self,details):
+        all=details.get('all')
+        text=details.get('find')
+        new_text=details.get('replace')
+        config.set('find_replace',new_text)
+        while self.find(details):
+            x=self.cursor.x
+            self.doc.delete_block(self.cursor.y,x,x+len(text))
+            self.doc.insert_block(new_text,self.cursor)
+            self.last_find_action=lambda: self.replace(details)            
+            if not all:
+                break
+            
+        
     def on_find_replace(self):
-        pass
+        self.active_dialog=dialogs.FindReplaceDialog(self.find,self.replace)
         
     def on_ask_save(self,action):
         if self.doc.modified:
