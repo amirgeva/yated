@@ -20,7 +20,7 @@ class View:
         self.rownum_width=0
         self.selection=None
         self.lastx=0
-        self.tabsize=4
+        self.tabsize=config.getint('tabsize',4)
         self.insert=True
         self.shifted_moves={'KEY_SLEFT':'KEY_LEFT',
                             'KEY_SRIGHT':'KEY_RIGHT',
@@ -249,12 +249,14 @@ class View:
         else:
             actions=self.active_dialog.process_key(key)
             if not actions is None:
+                last_dialog=self.active_dialog
                 if not isinstance(actions,list):
                     actions=[actions]
                 for action in actions:
                     if isinstance(action, collections.Callable):
                         action()
-                self.active_dialog=None
+                if last_dialog==self.active_dialog:
+                    self.active_dialog=None
         
     def process_input(self):
         key=self.app.getkey()
@@ -449,8 +451,12 @@ class View:
     def on_colors(self):
         self.active_dialog=dialogs.ColorConfigDialog()
         
+    def update_editor_options(self,details):
+        self.tabsize=int(details.get('tabsize'))
+        config.set('tabsize',self.tabsize)
+        
     def on_cfg_editor(self):
-        pass
+        self.active_dialog=dialogs.EditorOptionsDialog(self.update_editor_options)
 
     def on_help_about(self):
         pass

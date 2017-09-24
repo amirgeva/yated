@@ -194,7 +194,7 @@ class FormDialog(Dialog):
         self.named_widgets={}
         self.cur=None
 
-    def details(self,vals):
+    def details(self,vals=[]):
         res={}
         for val in vals:
             res[val[0]]=val[1]
@@ -304,3 +304,17 @@ class ColorConfigDialog(Dialog):
         curses.init_pair(self.cur,fg,bg)
         return None
     
+    
+class EditorOptionsDialog(FormDialog):
+    def __init__(self,action):
+        super(EditorOptionsDialog,self).__init__(60,20)
+        self.action=action
+        self.add_widget('',FormLabel(Point(2,2),'Tab Size:'))
+        self.add_widget('tabsize',FormEdit(Point(16,2),config.get('tabsize','4'),2))
+        self.add_widget('',FormLabel(Point(2,16),'Enter to save, Esc when cancel'))
+        
+    def process_key(self,key):
+        super(EditorOptionsDialog,self).process_key(key)
+        if key==chr(10):
+            return lambda: self.action(self.details())
+        return None
