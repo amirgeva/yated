@@ -248,6 +248,8 @@ class FindReplaceDialog(FormDialog):
         self.add_widget('',FormLabel(Point(8,5),'Case Sensitive'))
         self.add_widget('regex',FormCheckbox(Point(4,6),config.getbool('find_regex')))
         self.add_widget('',FormLabel(Point(8,6),'Regular Expressions'))
+        self.add_widget('word',FormCheckbox(Point(4,7),config.getbool('find_word')))
+        self.add_widget('',FormLabel(Point(8,7),'Whole Word'))
         #
         self.add_widget('',FormLabel(Point(2,16),'Enter to find, Ctrl+R to replace, Ctrl+A to replace all'))
         
