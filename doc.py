@@ -108,6 +108,7 @@ class Document:
             if not self.undoing:
                 self.undos.append([self.delete_row,row_index])
             self.text.insert(row_index,text)
+        return Point(0,0)
             
     def delete_row(self,row_index):
         if row_index>=0 and row_index<self.rows_count():
@@ -115,6 +116,7 @@ class Document:
                 self.undos.append([self.insert_row,row_index,self.get_row(row_index)])
             del self.text[row_index]
             self.modified=True
+        return Point(0,0)
 
     def word_right(self,cursor):
         if cursor.y<0 or cursor.y>=self.rows_count():
