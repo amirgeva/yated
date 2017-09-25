@@ -1,10 +1,18 @@
 from ptypes import Point
 import re
+import config
+
+def normalize(row,tabsize,tabcount):
+    row=row.replace('\n','')
+    tabcount[0]+=row.count('\t')
+    row=row.replace('\t',' '*tabsize)
+    return row
 
 class Document:
     def __init__(self,filename=''):
         self.clear()
         self.filename=filename
+        self.tabs_replaced=False
         
     def clear(self):
         self.filename=''
@@ -16,12 +24,17 @@ class Document:
         
     def load(self,filename):
         try:
+            self.tabs_replaced=False
             f=open(filename,'r')
             self.text=f.readlines()
             f.close()
             if len(self.text)==0:
                 self.text=['']
-            self.text=[row.replace('\n','') for row in self.text]
+            tabsize=config.getint('tabsize')
+            tabcount=[0]
+            self.text=[normalize(row,tabsize,tabcount) for row in self.text]
+            if tabcount[0]>0:
+                self.tabs_replaced=True
             self.filename=filename
             self.invalidate()
         except IOError:
