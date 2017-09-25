@@ -14,6 +14,8 @@ class View:
         self.doc=doc
         self.active_menu=None
         self.active_dialog=None
+        self.recording=False
+        self.macro=[]
         self.last_find_action=None
         self.offset=Point(0,0)
         self.cursor=Point(0,0)
@@ -73,6 +75,10 @@ class View:
             self.on_file_open()
         if c==utils.ctrl('Q'):
             self.on_file_exit()
+        if c==utils.ctrl('R'):
+            self.toggle_macro_record()
+        if c==utils.ctrl('P'):
+            self.play_macro()
         if c==26: # Ctrl+Z
             movement=self.doc.undo()
         if c==ord('/') and not self.selection is None:
@@ -262,6 +268,11 @@ class View:
         key=self.app.getkey()
         if key=='KEY_F(12)':
             raise utils.ExitException()
+        if self.recording and key!=chr(utils.ctrl('R')):
+            self.macro.append(key)
+        return self.process_key(key)
+    
+    def process_key(self,key):
         self.process_app_shortcuts(key)
         if not self.active_menu is None:
             self.process_menu_keys(key)
@@ -337,6 +348,9 @@ class View:
         self.app.move(Point(0,self.app.height-1))
         s=utils.align(self.doc.filename,self.app.width-1)        
         self.app.write(s,4)
+        if self.recording:
+            self.app.move((self.app.width-1,0))
+            self.app.write('M',7,0)
         self.draw_cursor()
         if not self.active_menu is None:
             self.active_menu.draw(self.app)
@@ -381,13 +395,15 @@ class View:
             text=details.get('find')
             case=details.get('case')
             regex=details.get('regex')
+            word=details.get('word')
             config.set('find_text',text)
             config.set('find_case',case)
             config.set('find_regex',regex)
+            config.set('find_word',word)
             count=0
             start_cursor=Point(self.cursor)
             while count<=self.doc.rows_count():
-                x=self.doc.find_in_row(self.cursor,text,case,regex)
+                x=self.doc.find_in_row(self.cursor,text,case,regex,word)
                 if x>=0:
                     self.cursor=Point(x,self.cursor.y)
                     self.scroll_display()
@@ -447,6 +463,17 @@ class View:
             
     def on_file_discard(self):
         self.doc.modified=False
+        
+    def toggle_macro_record(self):
+        if not self.recording:
+            self.macro=[]
+        self.recording=not self.recording
+    
+    def play_macro(self):
+        if self.recording:
+            self.recording=False
+        for key in self.macro:
+            self.process_key(key)
 
     def on_colors(self):
         self.active_dialog=dialogs.ColorConfigDialog()
