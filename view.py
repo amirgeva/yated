@@ -14,6 +14,8 @@ class View:
         self.doc=doc
         self.active_menu=None
         self.active_dialog=None
+        if self.doc.tabs_replaced:
+            self.active_dialog=dialogs.MessageBox('Tab were replaced by spaces (Esc to continue)')
         self.recording=False
         self.macro=[]
         self.last_find_action=None
@@ -139,14 +141,14 @@ class View:
         self.scroll_display()
         
     def scroll_display(self):
-        scr_pos=self.cursor-self.offset
-        if not self.rect.is_point_inside(scr_pos):
+        scr_pos=self.cursor-self.offset+Point(self.rownum_width,0)
+        if not self.editrect.is_point_inside(scr_pos):
             if scr_pos.x>=self.rect.br.x:
-                self.offset.x=self.cursor.x-self.rect.width()+self.rownum_width+1
-            if scr_pos.x<(self.rect.tl.x+self.rownum_width):
+                self.offset.x=self.cursor.x-self.editrect.width()+1
+            if scr_pos.x<(self.editrect.tl.x):
                 self.offset.x=self.cursor.x
-            if scr_pos.y>=self.rect.br.y or scr_pos.y<self.rect.tl.y:
-                self.offset.y=self.cursor.y-int(self.rect.height()/2)
+            if scr_pos.y>=self.editrect.br.y or scr_pos.y<self.editrect.tl.y:
+                self.offset.y=self.cursor.y-int(self.editrect.height()/2)
                 if self.offset.y<0:
                     self.offset.y=0
             self.doc.invalidate()
@@ -306,6 +308,7 @@ class View:
         if not self.doc.valid:
             x0=self.line_number_width()
             self.rownum_width=x0
+            self.editrect = Rect(self.app.rect.tl + Point(x0, 1), self.app.rect.br - Point(0, 2))
             w=self.app.width-x0
             sel = self.normalized_selection()
             i0=self.offset.y-1
@@ -446,9 +449,14 @@ class View:
             self.doc.clear()
             self.cursor=Point(0,0)
         
+    def on_file_load(self,filename):
+        self.doc.load(filename)
+        if self.doc.tabs_replaced:
+            self.active_dialog=dialogs.MessageBox('Tab were replaced by spaces (Esc to continue)')
+        
     def on_file_open(self):
         if not self.on_ask_save(self.on_file_open):
-            self.active_dialog=dialogs.FileDialog(self.doc.load)
+            self.active_dialog=dialogs.FileDialog(self.on_file_load)
 
     def on_file_save(self):
         if not self.doc.save():
