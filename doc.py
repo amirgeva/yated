@@ -1,4 +1,5 @@
 from ptypes import Point
+import re
 
 class Document:
     def __init__(self,filename=''):
@@ -48,13 +49,26 @@ class Document:
             return ''
         return self.text[index]
         
-    def find_in_row(self,cursor,text,case,regex):
+    def find_in_row(self,cursor,text,case,regex,word):
         if cursor.y<0 or cursor.y>=self.rows_count():
             return -1
         row=self.get_row(cursor.y)
+        p=-1
         if not case:
-            return row.lower().find(text.lower(),cursor.x+1)
-        return row.find(text,cursor.x+1)
+            row=row.lower()
+            text=text.lower()
+        if word:
+            text='(^|\W){}($|\W)'.format(text)
+            regex=True
+        if regex:
+            pat=re.compile(text)
+            m=pat.search(row,cursor.x+1)
+            if m:
+                return 1+m.start()
+            return -1
+        else:
+            p=row.find(text,cursor.x+1)
+            return p
         
     def join_next_row(self,row_index):
         if row_index>=0 and row_index<(self.rows_count()-1):
