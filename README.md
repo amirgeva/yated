@@ -20,3 +20,4 @@ Main features:
 * Simple macro recording
 * Text search with case/whole word/regex support
 * Fast.  Loading 100Mb file takes about 1 second, compared to 40 seconds on gedit
+* For simplicity, tabs are replaced by spaces (size configurable)
