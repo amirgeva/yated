@@ -35,8 +35,8 @@ class Application:
                            config.getint('bg5',curses.COLOR_BLUE))
         curses.init_pair(6,config.getint('fg6',curses.COLOR_YELLOW),
                            config.getint('bg6',curses.COLOR_BLUE))
-        curses.init_pair(7,config.getint('fg7',curses.COLOR_YELLOW),
-                           config.getint('bg7',curses.COLOR_BLUE))
+        curses.init_pair(7,config.getint('fg7',curses.COLOR_WHITE),
+                           config.getint('bg7',curses.COLOR_RED))
         sys.stdout.write('\033]12;yellow\007')
         
     def set_menu(self,bar):
@@ -161,10 +161,12 @@ def create_menu(view):
                       ('Save &As',view.on_file_save_as),
                       ('&Exit    Ctrl+Q',view.on_file_exit),
                     ]),
-           ('&Edit',[ ('&Copy   Ctrl+C',view.on_copy),
-                      ('C&ut    Ctrl+X',view.on_cut),
-                      ('&Paste  Ctrl+V',view.on_paste),
-                      ('&Find   Ctrl+F',view.on_find_replace),
+           ('&Edit',[ ('&Copy          Ctrl+C',view.on_copy),
+                      ('C&ut           Ctrl+X',view.on_cut),
+                      ('&Paste         Ctrl+V',view.on_paste),
+                      ('&Find          Ctrl+F',view.on_find_replace),
+                      ('&Record Macro  Ctrl+R',view.toggle_macro_record),
+                      ('P&lay Macro    Ctrl+P',view.play_macro),
                     ]),
            ('&Options', [ ('&Colors',view.on_colors),
                           ('&Editor',view.on_cfg_editor),
