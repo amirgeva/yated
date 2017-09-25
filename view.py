@@ -142,8 +142,8 @@ class View:
         scr_pos=self.cursor-self.offset
         if not self.rect.is_point_inside(scr_pos):
             if scr_pos.x>=self.rect.br.x:
-                self.offset.x=self.cursor.x-self.rect.width()
-            if scr_pos.x<self.rect.tl.x:
+                self.offset.x=self.cursor.x-self.rect.width()+self.rownum_width+1
+            if scr_pos.x<(self.rect.tl.x+self.rownum_width):
                 self.offset.x=self.cursor.x
             if scr_pos.y>=self.rect.br.y or scr_pos.y<self.rect.tl.y:
                 self.offset.y=self.cursor.y-int(self.rect.height()/2)

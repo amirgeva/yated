@@ -7,6 +7,7 @@ GUI based editors.
 Written in Python and relying on the curses module, support for various
 key combinations varies with system and terminal.
 So far, best results are seen in the _gnome-terminal_
+Depends of python3-pyqt4 for clipboard operations
 
 Main features:
 
@@ -18,4 +19,4 @@ Main features:
 * Menu to help find commands / options
 * Simple macro recording
 * Text search with case/whole word/regex support
-
+* Fast.  Loading 100Mb file takes about 1 second, compared to 40 seconds on gedit
