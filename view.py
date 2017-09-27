@@ -494,4 +494,4 @@ class View:
         self.active_dialog=dialogs.EditorOptionsDialog(self.update_editor_options)
 
     def on_help_about(self):
-        pass
+        self.active_dialog=dialogs.AboutDialog()
