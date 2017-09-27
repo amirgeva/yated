@@ -36,6 +36,29 @@ class MessageBox(Dialog):
         super(MessageBox,self).draw(app)
         app.move(Point(self.rect.tl.x+4,self.rect.tl.y+4))
         app.write(self.prompt,4)
+
+class AboutDialog(Dialog):
+    def __init__(self):
+        super(AboutDialog,self).__init__(40,20)
+
+    def draw(self,app):
+        super(AboutDialog,self).draw(app)
+        pos=self.rect.tl+Point(4,3)
+        lines=['Yet Another Text EDitor',
+               '',
+               'A terminal based text editor,',
+               'inspired by a wish to have',
+               'an editor with default visual',
+               'and key bindings that resemble',
+               'typical GUI based editors.'
+               ]
+        for line in lines:
+            app.move(pos)
+            app.write(line,4)
+            pos+=(0,1)
+
+    def process_key(self,key):
+        return True
         
 class FileDialog(Dialog):
     def __init__(self,action):
