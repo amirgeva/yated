@@ -30,6 +30,9 @@ class Document:
             f.close()
             if len(self.text)==0:
                 self.text=['']
+            else:
+                if self.text[-1].endswith('\n'):
+                    self.text.append('')
             tabsize=config.getint('tabsize')
             tabcount=[0]
             self.text=[normalize(row,tabsize,tabcount) for row in self.text]
