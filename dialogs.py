@@ -50,7 +50,9 @@ class AboutDialog(Dialog):
                'inspired by a wish to have',
                'an editor with default visual',
                'and key bindings that resemble',
-               'typical GUI based editors.'
+               'typical GUI based editors.',
+               '',
+               'https://github.com/amirgeva/yated'
                ]
         for line in lines:
             app.move(pos)
