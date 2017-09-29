@@ -140,12 +140,16 @@ class Document:
         row=self.get_row(cursor.y)
         x=cursor.x
         space_found=False
-        while x<len(row):
-            if not row[x].isalnum():
-                space_found=True
-            if row[x].isalnum() and space_found:
-                break
-            x=x+1
+        if x<len(row):
+            while x<len(row):
+                if not row[x].isalnum():
+                    space_found=True
+                if row[x].isalnum() and space_found:
+                    break
+                x=x+1
+        else:
+            if cursor.y<(self.rows_count()-1):
+                return Point(0,cursor.y+1)
         return Point(x,cursor.y)
 
     def word_left(self,cursor):
@@ -153,6 +157,9 @@ class Document:
             return cursor
         row=self.get_row(cursor.y)
         x=cursor.x
+        if x==0:
+            if cursor.y>0:
+                return Point(len(self.get_row(cursor.y-1)),cursor.y-1)
         while x>0:
             x-=1
             if x>0 and row[x].isalnum() and not row[x-1].isalnum():
