@@ -9,6 +9,12 @@ key combinations varies with system and terminal.
 So far, best results are seen in the _gnome-terminal_
 Depends of python3-pyqt4 for clipboard operations
 
+Install with apt:
+
+    sudo apt install python3 python3-pip xclip
+    sudo pip3 install yated
+
+
 Main features:
 
 * Simple arrow based navigation

@@ -1,19 +1,15 @@
+#!/usr/bin/env python3
 import sys
 import atexit
+import subprocess
 
 impl=None
-copy_func=None
-paste_func=None
 
 class qt_Clipboard:
     def __init__(self):
         from PyQt4 import QtGui
         self.app=QtGui.QApplication(sys.argv)
         self.clipboard=self.app.clipboard()
-        global copy_func
-        global paste_func
-        copy_func=self.copy
-        paste_func=self.paste
   
     def copy(self,text):
         self.clipboard.setText(text)
@@ -24,6 +20,20 @@ class qt_Clipboard:
     def close(self):
         self.app.exit()
 
+class xclip_Clipboard:
+    def __init__(self):
+        self.paste()
+        
+    def copy(self,text):
+        p=subprocess.Popen(['xclip','-i','-selection','clipboard'],stdin=subprocess.PIPE)
+        p.stdin.write(bytes(bytearray(text,'utf-8')))
+        p.stdin.close()
+        
+    def paste(self):
+        return subprocess.check_output(['xclip','-o','-selection','clipboard']).decode("utf-8")
+    
+    def close(self):
+        pass
 
 def cleanup():
     if not impl is None:
@@ -38,15 +48,33 @@ def init_qt():
     except ImportError:
         pass
 
+def init_xclip():
+    global impl
+    try:
+        impl=xclip_Clipboard()
+    except FileNotFoundError:
+        pass
+
 def copy(text):
-    if not copy_func is None:
-        copy_func(text)
+    if not impl is None:
+        impl.copy(text)
 
 def paste():
-    if paste_func is None:
+    if impl is None:
         return ''
-    return paste_func()
+    return impl.paste()
 
+if impl is None:
+    init_xclip()
 if impl is None:
     init_qt()
 
+def unit_test():
+    copy("bla")
+    if paste()!="bla":
+        print("Failed")
+    else:
+        print("Success")
+
+if __name__=='__main__':
+    unit_test()
