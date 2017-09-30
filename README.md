@@ -6,8 +6,10 @@ GUI based editors.
 
 Written in Python and relying on the curses module, support for various
 key combinations varies with system and terminal.
+
 So far, best results are seen in the _gnome-terminal_
-Depends of python3-pyqt4 for clipboard operations
+
+Depends on either xclip or python3-pyqt4 for clipboard operations
 
 Install with apt:
 
