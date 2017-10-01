@@ -30,7 +30,10 @@ class xclip_Clipboard:
         p.stdin.close()
         
     def paste(self):
-        return subprocess.check_output(['xclip','-o','-selection','clipboard']).decode("utf-8")
+        try:
+            return subprocess.check_output(['xclip','-o','-selection','clipboard']).decode("utf-8")
+        except subprocess.CalledProcessError:
+            return ''
     
     def close(self):
         pass
