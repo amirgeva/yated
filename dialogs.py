@@ -350,7 +350,7 @@ class EditorOptionsDialog(FormDialog):
         self.action = action
         self.add_widget('', FormLabel(Point(2, 2), 'Tab Size:'))
         self.add_widget('tabsize', FormEdit(Point(16, 2), config.get('tabsize', '4'), 2))
-        self.add_widget('', FormLabel(Point(2, 16), 'Enter to save,  Esc when cancel'))
+        self.add_widget('', FormLabel(Point(2, 16), 'Enter to save,  Esc to cancel'))
         
     def process_key(self, key):
         super(EditorOptionsDialog, self).process_key(key)
