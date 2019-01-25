@@ -334,11 +334,11 @@ class View:
                         if sel.tl.y <= row_index <= sel.br.y:
                             x = 0
                             if row_index == sel.tl.y:
-                                x = sel.tl.x
+                                x = sel.tl.x - j0
                                 self.app.write(row[0:x], 1)
                             limit = len(row)
                             if row_index == sel.br.y:
-                                limit = sel.br.x
+                                limit = sel.br.x - j0
                             self.app.write(row[x:limit], 3)
                             if limit < len(row):
                                 self.app.write(row[limit:], 1)
