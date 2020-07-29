@@ -27,6 +27,7 @@ setup(
 
     description='A terminal based text editor',
     long_description=long_description,
+    long_description_content_type="text/markdown",
 
     # The project's main homepage.
     url='https://github.com/amirgeva/yated',
