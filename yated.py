@@ -63,7 +63,7 @@ class Application(object):
                 self.scr.addch(c, curses.color_pair(clr))
 
     def write(self, text, clr, attr=curses.A_BOLD):
-        clr = curses.color_pair(clr | attr)
+        clr = curses.color_pair(clr | (attr&0x7FFF))
         if isinstance(text, str):
             for i in range(0, len(text)):
                 c = text[i]
