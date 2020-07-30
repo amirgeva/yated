@@ -5,37 +5,52 @@ import subprocess
 
 impl = None
 
+
 class qt_Clipboard:
     def __init__(self):
         from PyQt4 import QtGui
         self.app = QtGui.QApplication(sys.argv)
         self.clipboard = self.app.clipboard()
-  
+
     def copy(self, text):
         self.clipboard.setText(text)
-    
+
     def paste(self):
         return self.clipboard.text()
-      
+
     def close(self):
         self.app.exit()
 
 
 class xclip_Clipboard:
     def __init__(self):
-        self.paste()
-        
+        subprocess.check_output(['xclip'])
+
     def copy(self, text):
         p = subprocess.Popen(['xclip', '-i', '-selection', 'clipboard'], stdin=subprocess.PIPE)
         p.stdin.write(bytes(bytearray(text, 'utf-8')))
         p.stdin.close()
-        
+
     def paste(self):
         try:
             return subprocess.check_output(['xclip', '-o', '-selection', 'clipboard']).decode("utf-8")
         except subprocess.CalledProcessError:
             return ''
-    
+
+    def close(self):
+        pass
+
+
+class internal_Clipboard:
+    def __init__(self):
+        self.text = ''
+
+    def copy(self, text):
+        self.text = text
+
+    def paste(self):
+        return self.text
+
     def close(self):
         pass
 
@@ -60,7 +75,7 @@ def init_xclip():
     global impl
     try:
         impl = xclip_Clipboard()
-    except FileNotFoundError:
+    except Exception:
         pass
 
 
@@ -79,6 +94,8 @@ if impl is None:
     init_xclip()
 if impl is None:
     init_qt()
+if impl is None:
+    impl = internal_Clipboard()
 
 
 def unit_test():

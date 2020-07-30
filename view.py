@@ -302,7 +302,7 @@ class View:
 
     def line_number_width(self):
         s = str(len(self.doc.text))
-        return len(s)
+        return len(s)+1
 
     def render(self):
         if not self.doc.valid:
@@ -317,7 +317,7 @@ class View:
                 row_index = i0 + y
                 self.app.move(Point(0, y))
                 rownum = str(row_index + 1)
-                rownum = ' ' * (x0 - len(rownum)) + rownum
+                rownum = ' ' * (x0 - len(rownum) - 1) + rownum + ' '
                 if row_index >= self.doc.rows_count():
                     rownum = ' ' * len(rownum)
                 self.app.write(rownum, 2)
