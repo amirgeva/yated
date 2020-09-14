@@ -59,8 +59,9 @@ class Application(object):
     def fill(self, x0, y0, w, h, c, clr):
         for y in range(y0, y0 + h):
             self.move((x0, y))
-            for x in range(x0, x0 + w):
-                self.scr.addch(c, curses.color_pair(clr))
+            self.write(c*w,clr)
+            #for x in range(x0, x0 + w):
+                #self.scr.addch(c, curses.color_pair(clr))
 
     def write(self, text, clr, attr=curses.A_BOLD):
         clr = curses.color_pair(clr | (attr&0x7FFF))

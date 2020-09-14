@@ -99,20 +99,21 @@ class FileDialog(Dialog):
         self.editpos = pos+(len(self.dir)+1, 0)
         pos += (2, 1)
         for i in range(0, 17):
+            c = 4
             idx = i+self.ofs
             app.move(pos)
             if idx < len(self.items):
                 attr = 0
                 if self.cur == idx:
-                    attr = curses.A_REVERSE
+                    c = 1
                 s = self.items[idx]
                 if len(s) > 50:
                     s = s[0:50]
                 if len(s) < 50:
                     s = s+' '*(50-len(s))
-                app.write(s, 4, attr)
+                app.write(s, c, attr)
             else:
-                app.write(' '*50, 4)
+                app.write(' '*50, c)
             pos += (0, 1)
         if not self.browse_mode:
             app.move(self.editpos)
@@ -311,9 +312,10 @@ class ColorConfigDialog(Dialog):
         for i in range(1, 8):
             app.move(pos)
             attr = 0
+            c = 4
             if i == self.cur:
-                attr = curses.A_REVERSE
-            app.write('Color {}  '.format(i), 4, attr)
+                c = 1
+            app.write(f'Color {i}  ', c, attr)
             app.write('ABC', i)
             pos += (0, 1)
         pos += Point(8, 1)
