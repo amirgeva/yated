@@ -174,6 +174,8 @@ class View:
 
     def process_special_keys(self, key):
         movement = None
+        if key == chr(0x7f):
+            key = 'KEY_BACKSPACE'
         if key == 'KEY_F(3)':
             if self.last_find_action is not None:
                 self.last_find_action()
