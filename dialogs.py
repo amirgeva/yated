@@ -1,4 +1,4 @@
-from ptypes import Point,  Rect
+from ptypes import Point, Rect
 import config
 import curses
 import os
@@ -9,13 +9,13 @@ class Dialog(object):
         self.width = width
         self.height = height
         self.rect = None
-        
+
     def draw(self, app):
-        cx = int(app.width/2)
-        cy = int(app.height/2)
-        y = int(cy - self.height/2)
-        x = int(cx - self.width/2)
-        self.rect = Rect(x, y, x+self.width, y+self.height)
+        cx = int(app.width / 2)
+        cy = int(app.height / 2)
+        y = int(cy - self.height / 2)
+        x = int(cx - self.width / 2)
+        self.rect = Rect(x, y, x + self.width, y + self.height)
         app.draw_frame(self.rect, 4)
         app.fill_rect(Rect(self.rect).inflate(-1), ' ', 4)
 
@@ -29,7 +29,7 @@ class MessageBox(Dialog):
     def add_key(self, key, action):
         self.actions[key.lower()] = action
         self.actions[key.upper()] = action
-        
+
     def process_key(self, key):
         if key in self.actions:
             return self.actions.get(key)
@@ -37,7 +37,7 @@ class MessageBox(Dialog):
 
     def draw(self, app):
         super(MessageBox, self).draw(app)
-        app.move(Point(self.rect.tl.x+4, self.rect.tl.y+4))
+        app.move(Point(self.rect.tl.x + 4, self.rect.tl.y + 4))
         app.write(self.prompt, 4)
 
 
@@ -47,7 +47,7 @@ class AboutDialog(Dialog):
 
     def draw(self, app):
         super(AboutDialog, self).draw(app)
-        pos = self.rect.tl+Point(4, 3)
+        pos = self.rect.tl + Point(4, 3)
         lines = ('Yet Another Text EDitor',
                  '',
                  'A terminal based text editor, ',
@@ -79,28 +79,28 @@ class FileDialog(Dialog):
         self.items = []
         self.fill_items()
         self.action = action
-    
+
     def fill_items(self):
         files = os.listdir(self.dir)
         for i in range(0, len(files)):
             name = files[i]
             path = os.path.join(self.dir, name)
             if os.path.isdir(path):
-                name = name+'/'
+                name = name + '/'
             files[i] = name
         files.insert(0, '../')
         self.items = files
 
     def draw(self, app):
         super(FileDialog, self).draw(app)
-        pos = self.rect.tl+Point(1, 1)
+        pos = self.rect.tl + Point(1, 1)
         app.move(pos)
-        app.write(self.dir+'/', 1)
-        self.editpos = pos+(len(self.dir)+1, 0)
+        app.write(self.dir + '/', 1)
+        self.editpos = pos + (len(self.dir) + 1, 0)
         pos += (2, 1)
         for i in range(0, 17):
             c = 4
-            idx = i+self.ofs
+            idx = i + self.ofs
             app.move(pos)
             if idx < len(self.items):
                 attr = 0
@@ -110,31 +110,31 @@ class FileDialog(Dialog):
                 if len(s) > 50:
                     s = s[0:50]
                 if len(s) < 50:
-                    s = s+' '*(50-len(s))
+                    s = s + ' ' * (50 - len(s))
                 app.write(s, c, attr)
             else:
-                app.write(' '*50, c)
+                app.write(' ' * 50, c)
             pos += (0, 1)
         if not self.browse_mode:
             app.move(self.editpos)
             app.write(self.edit_text, 1)
-        
+
     def process_key(self, key):
         if self.browse_mode:
             if key == chr(9):  # tab
                 self.browse_mode = False
             if key == 'KEY_DOWN':
-                self.cur = (self.cur+1) % len(self.items)
+                self.cur = (self.cur + 1) % len(self.items)
             if key == 'KEY_UP':
-                self.cur = (self.cur-1) % len(self.items)
+                self.cur = (self.cur - 1) % len(self.items)
             if key == 'KEY_END':
-                self.cur = len(self.items)-1
+                self.cur = len(self.items) - 1
             if key == 'KEY_HOME':
                 self.cur = 0
             if key == 'KEY_PPAGE':
-                self.cur = (self.cur-17) % len(self.items)
+                self.cur = (self.cur - 17) % len(self.items)
             if key == 'KEY_NPAGE':
-                self.cur = (self.cur+17) % len(self.items)
+                self.cur = (self.cur + 17) % len(self.items)
             if key == chr(10):  # Enter
                 name = self.items[self.cur]
                 path = os.path.abspath(os.path.join(self.dir, name))
@@ -143,8 +143,8 @@ class FileDialog(Dialog):
                     self.fill_items()
                 else:
                     return lambda: self.action(path)
-            if self.cur < self.ofs or self.cur >= (self.ofs+17):
-                self.ofs = self.cur-8
+            if self.cur < self.ofs or self.cur >= (self.ofs + 17):
+                self.ofs = self.cur - 8
                 if self.ofs < 0:
                     self.ofs = 0
         else:
@@ -172,16 +172,16 @@ class FormCheckbox(FormWidget):
         super(FormCheckbox, self).__init__(pos)
         self.tabstop = True
         self.state = state
-        
+
     def details(self):
         return self.state
-        
+
     def draw(self, app, tl):
-        app.move(self.pos+tl-Point(1, 0))
+        app.move(self.pos + tl - Point(1, 0))
         mark = 'X' if self.state else ' '
         app.write('[{}]'.format(mark), 4)
-        app.move(self.pos+tl)
-        
+        app.move(self.pos + tl)
+
     def process_key(self, key):
         if key == ' ':
             self.state = not self.state
@@ -195,10 +195,10 @@ class FormLabel(FormWidget):
         self.pad = 0
 
     def draw(self, app, tl):
-        app.move(self.pos+tl)
+        app.move(self.pos + tl)
         app.write(self.text, self.color)
         if self.pad > len(self.text):
-            app.write(' '*(self.pad-len(self.text)), self.color)
+            app.write(' ' * (self.pad - len(self.text)), self.color)
 
 
 class FormEdit(FormLabel):
@@ -208,21 +208,21 @@ class FormEdit(FormLabel):
         self.color = 1
         self.maxlen = maxlen
         self.pad = maxlen
-        
+
     def details(self):
         return self.text
-        
+
     def draw(self, app, tl):
         super(FormEdit, self).draw(app, tl)
-        app.move(self.pos+tl+Point(len(self.text), 0))
+        app.move(self.pos + tl + Point(len(self.text), 0))
 
     def process_key(self, key):
         if len(key) == 1 and 32 <= ord(key[0]) < 128:
-            self.text = self.text+key
+            self.text = self.text + key
         if key == 'KEY_BACKSPACE' and len(self.text) > 0:
             self.text = self.text[0:-1]
 
-    
+
 class FormDialog(Dialog):
     def __init__(self, w, h):
         super(FormDialog, self).__init__(w, h)
@@ -246,7 +246,7 @@ class FormDialog(Dialog):
             if name:
                 self.named_widgets[name] = widget
             if self.cur is None and widget.tabstop:
-                self.cur = len(self.widgets)-1
+                self.cur = len(self.widgets) - 1
 
     def draw(self, app):
         super(FormDialog, self).draw(app)
@@ -256,16 +256,16 @@ class FormDialog(Dialog):
                 widget.draw(app, self.rect.tl)
         if self.cur is not None:
             self.widgets[self.cur].draw(app, self.rect.tl)
-            
+
     def process_key(self, key):
         if key == chr(9):  # tab
             while True:
-                self.cur = (self.cur+1) % len(self.widgets)
+                self.cur = (self.cur + 1) % len(self.widgets)
                 if self.widgets[self.cur].tabstop:
                     break
         if key == 'KEY_BTAB':  # back-tab
             while True:
-                self.cur = (self.cur-1) % len(self.widgets)
+                self.cur = (self.cur - 1) % len(self.widgets)
                 if self.widgets[self.cur].tabstop:
                     break
         if self.cur is not None:
@@ -290,16 +290,18 @@ class FindReplaceDialog(FormDialog):
         self.add_widget('', FormLabel(Point(8, 7), 'Whole Word'))
         #
         self.add_widget('', FormLabel(Point(2, 16), 'Enter to find,  Ctrl+R to replace,  Ctrl+A to replace all'))
-        
+
     def process_key(self, key):
+        props = [('all', False), ('first', True)]
         if key == chr(18):  # Ctrl+R
-            return lambda: self.replace_action(self.details([('all', False)]))
+            return lambda: self.replace_action(self.details(props))
         if key == chr(1):  # Ctrl+A
-            return lambda: self.replace_action(self.details([('all', True)]))
+            props[0] = 'all', True
+            return lambda: self.replace_action(self.details(props))
         if key == chr(10):  # Enter
-            return lambda: self.find_action(self.details([]))
+            return lambda: self.find_action(self.details(props))
         return super(FindReplaceDialog, self).process_key(key)
-        
+
 
 class ColorConfigDialog(Dialog):
     def __init__(self):
@@ -308,7 +310,7 @@ class ColorConfigDialog(Dialog):
 
     def draw(self, app):
         super(ColorConfigDialog, self).draw(app)
-        pos = self.rect.tl+Point(2, 2)
+        pos = self.rect.tl + Point(2, 2)
         for i in range(1, 8):
             app.move(pos)
             attr = 0
@@ -321,31 +323,31 @@ class ColorConfigDialog(Dialog):
         pos += Point(8, 1)
         app.move(pos)
         app.write('Use left/right pgup/pgdn to change colors', 4)
-        app.move(pos+(0, 1))
+        app.move(pos + (0, 1))
         app.write('Esc when done', 4)
-            
+
     def process_key(self, key):
         if key == 'KEY_DOWN':
-            self.cur = 1+(self.cur % 7)
+            self.cur = 1 + (self.cur % 7)
         if key == 'KEY_UP':
-            self.cur = 1+((self.cur-2) % 7)
+            self.cur = 1 + ((self.cur - 2) % 7)
 
         fg = config.getint('fg{}'.format(self.cur))
         bg = config.getint('bg{}'.format(self.cur))
         if key == 'KEY_LEFT':
-            fg = (fg-1) % 8
+            fg = (fg - 1) % 8
         if key == 'KEY_RIGHT':
-            fg = (fg+1) % 8
+            fg = (fg + 1) % 8
         if key == 'KEY_PPAGE':
-            bg = (bg-1) % 8
+            bg = (bg - 1) % 8
         if key == 'KEY_NPAGE':
-            bg = (bg+1) % 8
+            bg = (bg + 1) % 8
         config.set('fg{}'.format(self.cur), fg)
         config.set('bg{}'.format(self.cur), bg)
         curses.init_pair(self.cur, fg, bg)
         return None
-    
-    
+
+
 class EditorOptionsDialog(FormDialog):
     def __init__(self, action):
         super(EditorOptionsDialog, self).__init__(60, 20)
@@ -353,7 +355,7 @@ class EditorOptionsDialog(FormDialog):
         self.add_widget('', FormLabel(Point(2, 2), 'Tab Size:'))
         self.add_widget('tabsize', FormEdit(Point(16, 2), config.get('tabsize', '4'), 2))
         self.add_widget('', FormLabel(Point(2, 16), 'Enter to save,  Esc to cancel'))
-        
+
     def process_key(self, key):
         super(EditorOptionsDialog, self).process_key(key)
         if key == chr(10):

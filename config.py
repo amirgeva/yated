@@ -35,5 +35,3 @@ def save_cfg():
 
 
 atexit.register(save_cfg)
-
-

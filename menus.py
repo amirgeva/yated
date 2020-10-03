@@ -7,7 +7,10 @@ class MenuItem(object):
         self.title = title
         self.action = action
         self.key = ''
-        
+        p = title.index('&')
+        if 0 <= p < (len(title) - 1):
+            self.key = title[p + 1]
+
     def activate(self):
         if self.action is not None:
             self.action()
@@ -21,7 +24,7 @@ class Menu(object):
         self.cur = 0
         self.items = []
         self.width = 4
-        
+
     def add_item(self, *args):  # title, action = None):
         if len(args) == 1 and isinstance(args[0], MenuItem):
             item = args[0]
@@ -34,23 +37,30 @@ class Menu(object):
         else:
             raise TypeError()
         self.items.append(item)
-        self.width = max(self.width, 4+len(item.title))
-        
+        self.width = max(self.width, 4 + len(item.title))
+
+    def on_key(self, key):
+        for item in self.items:
+            if item.key == key:
+                item.activate()
+                return True
+        return False
+
     def select_next(self):
-        self.cur = (self.cur+1) % len(self.items)
+        self.cur = (self.cur + 1) % len(self.items)
 
     def select_prev(self):
-        self.cur = (self.cur-1) % len(self.items)
-        
+        self.cur = (self.cur - 1) % len(self.items)
+
     def activate_current(self):
         self.items[self.cur].activate()
-        
+
     def draw(self, scr):
         color = 4
         pos = Point(self.pos)
         scr.move(pos)
         scr.write(curses.ACS_ULCORNER, color)
-        for i in range(0, self.width-2):
+        for i in range(0, self.width - 2):
             scr.write(curses.ACS_HLINE, color)
         scr.write(curses.ACS_URCORNER, color)
         index = 0
@@ -64,18 +74,16 @@ class Menu(object):
             n = 0
             if index == self.cur:
                 color = 3
+            char_color = color
             for c in item.title:
                 if c == '&':
-                    rev = True
+                    char_color = 5
                 else:
                     attr = 0
-                    if rev:
-                        attr = curses.A_REVERSE
-                        rev = False
-                        item.key = c
-                    scr.write(c, color, attr)
-                    n = n+1
-            s = ' '*(self.width-4-n)
+                    scr.write(c, char_color, attr)
+                    char_color = color
+                    n = n + 1
+            s = ' ' * (self.width - 4 - n)
             scr.write(s, color)
             color = 4
             scr.write(' ', color)
@@ -84,7 +92,6 @@ class Menu(object):
         pos += (0, 1)
         scr.move(pos)
         scr.write(curses.ACS_LLCORNER, color)
-        for i in range(0, self.width-2):
+        for i in range(0, self.width - 2):
             scr.write(curses.ACS_HLINE, color)
         scr.write(curses.ACS_LRCORNER, color)
-

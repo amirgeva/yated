@@ -89,7 +89,7 @@ class Document:
                 return 1 + m.start()
             return -1
         else:
-            return row.find(text, cursor.x + 1)
+            return row.find(text, cursor.x)
 
     def join_next_row(self, row_index):
         if 0 <= row_index < (self.rows_count() - 1):

@@ -59,12 +59,12 @@ class Application(object):
     def fill(self, x0, y0, w, h, c, clr):
         for y in range(y0, y0 + h):
             self.move((x0, y))
-            self.write(c*w,clr)
-            #for x in range(x0, x0 + w):
-                #self.scr.addch(c, curses.color_pair(clr))
+            self.write(c * w, clr)
+            # for x in range(x0, x0 + w):
+            # self.scr.addch(c, curses.color_pair(clr))
 
     def write(self, text, clr, attr=curses.A_BOLD):
-        clr = curses.color_pair(clr | (attr&0x7FFF))
+        clr = curses.color_pair(clr | (attr & 0x7FFF))
         if isinstance(text, str):
             for i in range(0, len(text)):
                 c = text[i]
@@ -128,17 +128,19 @@ class Application(object):
             pos += Point(len(title) - title.count('&') + 3, 0)
             self.write('[', color)
             rev = False
+            char_color = color
             for c in title:
                 if c == '&':
+                    char_color = color + 1
                     rev = True
                 else:
                     attr = curses.A_BOLD
                     if rev:
-                        attr = curses.A_REVERSE
                         rev = False
                         self.shortcuts['Alt+' + c.upper()] = item
                         self.shortcuts['Alt+' + c.lower()] = item
-                    self.write(c, color, attr)
+                    self.write(c, char_color, attr)
+                    char_color = color
             self.write('] ', color)
 
 
@@ -169,6 +171,7 @@ def create_menu(view):
                        ('C&ut           Ctrl+X', view.on_cut),
                        ('&Paste         Ctrl+V', view.on_paste),
                        ('&Find          Ctrl+F', view.on_find_replace),
+                       ('Find &Again        F3', view.on_find_again),
                        ('&Record Macro  Ctrl+R', view.toggle_macro_record),
                        ('P&lay Macro    Ctrl+P', view.play_macro),
                        ]),

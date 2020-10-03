@@ -240,6 +240,8 @@ class View:
             self.active_menu.select_next()
         if key == 'KEY_UP':
             self.active_menu.select_prev()
+        if self.active_menu.on_key(key):
+            return
         if key == chr(10):
             self.active_menu.activate_current()
             self.active_menu = None
@@ -304,7 +306,7 @@ class View:
 
     def line_number_width(self):
         s = str(len(self.doc.text))
-        return len(s)+1
+        return len(s) + 1
 
     def render(self):
         if not self.doc.valid:
@@ -396,6 +398,8 @@ class View:
 
     def find(self, details):
         try:
+            first = details.get('first')
+            details['first'] = False
             self.last_find_action = lambda: self.find(details)
             text = details.get('find')
             case = details.get('case')
@@ -407,6 +411,8 @@ class View:
             config.set('find_word', word)
             count = 0
             start_cursor = Point(self.cursor)
+            if not first:
+                self.cursor = Point(self.cursor.x + 1, self.cursor.y)
             while count <= self.doc.rows_count():
                 x = self.doc.find_in_row(self.cursor, text, case, regex, word)
                 if x >= 0:
@@ -416,6 +422,7 @@ class View:
                 else:
                     self.cursor = Point(0, (self.cursor.y + 1) % self.doc.rows_count())
                     count += 1
+            self.cursor = start_cursor
             self.app.move(start_cursor)
         except KeyError:
             pass
@@ -436,6 +443,10 @@ class View:
 
     def on_find_replace(self):
         self.active_dialog = dialogs.FindReplaceDialog(self.find, self.replace)
+
+    def on_find_again(self):
+        if self.last_find_action is not None:
+            self.last_find_action()
 
     def on_ask_save(self, action):
         if self.doc.modified:
