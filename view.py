@@ -164,7 +164,7 @@ class View:
             shift = True
         if key in self.movement_keys:
             m = self.movement_keys.get(key)
-            if isinstance(m, collections.Callable):
+            if hasattr(m,'__call__'):
                 movement = m(self)
             else:
                 movement = m
@@ -265,7 +265,7 @@ class View:
                 if not isinstance(actions, list):
                     actions = [actions]
                 for action in actions:
-                    if isinstance(action, collections.Callable):
+                    if hasattr(action,'__call__'):
                         action()
                 if last_dialog == self.active_dialog:
                     self.active_dialog = None

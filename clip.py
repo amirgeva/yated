@@ -24,7 +24,7 @@ class qt_Clipboard:
 
 class xclip_Clipboard:
     def __init__(self):
-        subprocess.check_output(['xclip'])
+        subprocess.check_output(['xclip', '-version'])
 
     def copy(self, text):
         p = subprocess.Popen(['xclip', '-i', '-selection', 'clipboard'], stdin=subprocess.PIPE)
